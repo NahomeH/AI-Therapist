@@ -3,6 +3,7 @@ from flask_cors import CORS
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
+import logging
 from logging_config import setup_logging
 from util import generate_response
 

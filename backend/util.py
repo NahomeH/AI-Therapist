@@ -6,13 +6,7 @@ import prompt_lib as pl
 setup_logging()
 logger = logging.getLogger(__name__)
 
-CRISIS_MESSAGE = """
-It sounds like you're going through a really difficult time. As an AI, I'm not equipped to provide 
-crisis support, and I would highly recommend seeking out professional resources. If you need immediate help,
-you can contact Crisis Text Line by texting HOME to 741741, call the Suicide & Crisis Lifeline at 988, or even
-go to the emergency room you feel like you need. Please let me know if there's anything else I can do for you. You can get through this.
-"""
-
+CRISIS_MESSAGE = "It sounds like you're going through a really difficult time. As an AI, I'm not equipped to provide crisis support, and I would highly recommend seeking out professional resources. If you need immediate help, you can contact Crisis Text Line by texting HOME to 741741, call the Suicide & Crisis Lifeline at 988, or even go to the emergency room you feel like you need. Please let me know if there's anything else I can do for you. You can get through this."
 MIN_CONVO_LEN = 10
 CONTEXT_LEN = 3
 
@@ -68,8 +62,9 @@ def generate_response(session_id, client, temp_db):
     elif "3" in intent:
         return get_response(client, pl.systemprompt_v1_mini() + pl.robust_v0(), temp_db[session_id]["history"])
 
-    logger.info(f"Convo length: {len(temp_db[session_id]["history"])}")
-    if len(temp_db[session_id]["history"]) >= MIN_CONVO_LEN:
+    convo_len = len(temp_db[session_id]["history"])
+    logger.info(f"Convo length: {convo_len}")
+    if convo_len >= MIN_CONVO_LEN:
         should_end = get_response(client, pl.idenfity_end_prompt_v0() + str(temp_db[session_id]["history"][-CONTEXT_LEN:]), [])
         logger.info(f"should_end: {should_end}")
         if "1" in should_end:
