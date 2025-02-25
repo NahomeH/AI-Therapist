@@ -7,16 +7,17 @@ from dotenv import load_dotenv
 
 import prompts
 import util
+from logging_config import setup_logging
 
 # Configure logging
+setup_logging()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 load_dotenv()
 
 def main():
     chat_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
-    init_message = "\nTalk2Me: Hi! I'm Jennifer, Talk2Me' 24/7 AI therapist. What would you like to talk about?"
+    init_message = "\nTalk2Me: Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?"
     convo_history = [{"role": "assistant", "content": init_message}]
     print(init_message)
     while True:

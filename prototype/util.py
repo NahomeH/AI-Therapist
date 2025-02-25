@@ -3,10 +3,11 @@ import openai
 from openai import OpenAI
 
 import prompts
+from logging_config import setup_logging
 
 # Configure logging
+setup_logging()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 CRISIS_MESSAGE = """
 It sounds like you're going through a really difficult time. As an AI, I'm not equipped to provide 
@@ -21,14 +22,12 @@ def get_response(client, sys_prompt, messages):
 
     Args:
         client (OpenAI): The OpenAI client instance.
-        sys_prompt (str): The system prompt to send to the API.
         messages (list): The conversation history to send to the API.
 
     Returns:
         str: The response from the API.
     """
-    conversation = [{"role": "system", "content": sys_prompt}]
-    conversation.extend(messages)
+    conversation = [{"role": "system", "content": sys_prompt}, *messages]
     try:
         logger.debug("Sending request to OpenAI API")
         response = client.chat.completions.create(
@@ -54,12 +53,10 @@ def generate_response(client, messages):
     Returns:
         str: The generated response.
     """
-    intent = get_response(client, prompts.classify_intent_prompt_v0(), messages[-1])
+    intent = get_response(client, prompts.classify_intent_prompt_v0(), [messages[-1]])
     logger.info(f"Detected intent: {intent}")
-    
     if "2" in intent:
         return CRISIS_MESSAGE
     elif "3" in intent:
         return get_response(client, prompts.systemprompt_v1_mini() + prompts.robust_v0(), messages)
     return get_response(client, prompts.systemprompt_v1(), messages)
-    

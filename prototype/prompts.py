@@ -7,8 +7,6 @@ def classify_intent_prompt_v0():
     2. **Crisis/Harm Message:** A message that indicates the user may be in crisis or at risk of harm to themselves or others (e.g., "I want to end it all", "I feel like hurting someone", etc.).
     3. **Irrelevant/Bypass Message:** A message that is off-topic, irrelevant to a therapeutic context, or seems intended to bypass or break the agent (e.g., asking for help with a math problem, discussing non-therapeutic topics like celebrity opinions, etc.).
 
-    Use these few-shot examples as guidance:
-
     **Example 1:**
     Input: "I've been feeling a bit down and anxious about work."
     Output: 1
@@ -25,7 +23,8 @@ def classify_intent_prompt_v0():
     Input: "What do you think about Elon Musk?"
     Output: 3
 
-    When a new user message is provided, analyze it and output only the corresponding number according to the rules above.
+    OUTPUT ONLY A NUMBER FROM {1,2,3}.
+    Input:
     """
 
 def systemprompt_v1_mini():
