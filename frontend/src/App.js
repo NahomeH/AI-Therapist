@@ -28,7 +28,20 @@ function App() {
   const [messages, setMessages] = useState([
     { message: "Hi, I'm Talk2Me! What's on your mind?", sender: "bot" },
   ]);
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [hasSelectedMode, setHasSelectedMode] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+
+    // Initialize chat after mode selection
+    const initializeChat = (mode) => {
+        setIsVoiceMode(mode);
+        setHasSelectedMode(true);
+        setMessages([{ 
+          message: `Hi, I'm Talk2Me! ${mode ? 'Press space or the button below to start speaking.' : 'What\'s on your mind?'}`, 
+          sender: "bot" 
+        }]);
+      };
 
   /**
    * Handles sending messages to the backend server and updating the chat UI.
@@ -80,41 +93,64 @@ function App() {
 
   return (
     <div className="app-container">
-      <div className="chat-window">
-        <MainContainer>
-          <ChatContainer>
-            <ConversationHeader>
-              <ConversationHeader.Content 
-                userName="Talk2Me"
-              />
-            </ConversationHeader>
-            <MessageList 
-              typingIndicator={isTyping ? <TypingIndicator content="Talk2Me is thinking..." /> : null}
-              className="message-list"
-            >
-              {messages.map((msg, i) => (
-                <Message 
-                  key={i} 
-                  model={{
-                    message: msg.message,
-                    sender: msg.sender,
-                    direction: msg.sender === "user" ? "outgoing" : "incoming",
-                    position: "single"
-                  }}
+      {!hasSelectedMode ? (
+        <div className="mode-selection">
+          <h1>Welcome to Talk2Me</h1>
+          <p>Choose how you'd like to interact:</p>
+          <div className="mode-buttons">
+          <button onClick={() => initializeChat(false)} className="mode-button text-mode">
+            <span className="mode-icon">
+                <span role="img" aria-label="keyboard">⌨️</span>
+            </span>
+            <span className="mode-label">Text Chat</span>
+            <span className="mode-description">Type to communicate</span>
+            </button>
+          <button onClick={() => initializeChat(true)} className="mode-button voice-mode">
+            <span className="mode-icon">
+                <span role="img" aria-label="microphone">🎤</span>
+            </span>
+            <span className="mode-label">Voice Chat</span>
+            <span className="mode-description">Speak to communicate</span>
+          </button>
+          </div>
+        </div>
+      ) : (
+        <div className="chat-window">
+            <MainContainer>
+            <ChatContainer>
+                <ConversationHeader>
+                <ConversationHeader.Content 
+                    userName="Talk2Me"
+                />
+                </ConversationHeader>
+                <MessageList 
+                typingIndicator={isTyping ? <TypingIndicator content="Talk2Me is thinking..." /> : null}
+                className="message-list"
                 >
-                  <Message.Header sender={msg.sender === "bot" ? "Talk2Me" : "You"} />
-                </Message>
-              ))}
-            </MessageList>
-            <MessageInput 
-              placeholder="Type your message here..."
-              onSend={handleSend}
-              attachButton={false}
-              className="message-input"
-            />
-          </ChatContainer>
-        </MainContainer>
-      </div>
+                {messages.map((msg, i) => (
+                    <Message 
+                    key={i} 
+                    model={{
+                        message: msg.message,
+                        sender: msg.sender,
+                        direction: msg.sender === "user" ? "outgoing" : "incoming",
+                        position: "single"
+                    }}
+                    >
+                    <Message.Header sender={msg.sender === "bot" ? "Talk2Me" : "You"} />
+                    </Message>
+                ))}
+                </MessageList>
+                <MessageInput 
+                placeholder="Type your message here..."
+                onSend={handleSend}
+                attachButton={false}
+                className="message-input"
+                />
+            </ChatContainer>
+            </MainContainer>
+        </div>
+      )}
     </div>
   );
 }
