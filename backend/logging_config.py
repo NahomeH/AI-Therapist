@@ -6,7 +6,7 @@ def setup_logging():
     """Configure logging to write to logs directory in project root"""
     # Get the project root directory (parent of prototype)
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    log_dir = os.path.join(project_root, 'logs/prototype')
+    log_dir = os.path.join(project_root, 'logs/app_backend')
     
     # Create logs directory if it doesn't exist
     os.makedirs(log_dir, exist_ok=True)

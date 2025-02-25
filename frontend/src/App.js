@@ -26,7 +26,7 @@ import "./App.css";
  */
 function App() {
   const [messages, setMessages] = useState([
-    { message: "Hi, I'm Talk2Me! What's on your mind?", sender: "bot" },
+    { message: "Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?", sender: "bot" },
   ]);
   const [isTyping, setIsTyping] = useState(false);
 

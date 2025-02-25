@@ -1,6 +1,6 @@
 import logging
-import prompts
 from logging_config import setup_logging
+import prompt_lib as pl
 
 # Configure logging
 setup_logging()
@@ -14,7 +14,6 @@ go to the emergency room you feel like you need. Please let me know if there's a
 """
 
 MIN_CONVO_LEN = 10
-SENT_CRISIS = False
 CONTEXT_LEN = 3
 
 def get_response(client, sys_prompt, messages):
@@ -43,37 +42,37 @@ def get_response(client, sys_prompt, messages):
         logger.error(error_msg)
         return error_msg
 
-def handle_crisis_message(client, messages):
-    global SENT_CRISIS
-    logger.info(f"SENT_CRISIS original status: {SENT_CRISIS}")
-    if not SENT_CRISIS:
-        SENT_CRISIS = True
+def handle_crisis_message(session_id, client, temp_db):
+    logger.info(f"SENT_CRISIS original status: {temp_db[session_id]['crisis_status']}")
+    if not temp_db[session_id]['crisis_status']:
+        temp_db[session_id]['crisis_status'] = True
         return CRISIS_MESSAGE
-    return get_response(client, prompts.handle_crisis_prompt_v0(), messages)
+    return get_response(client, pl.handle_crisis_prompt_v0(), temp_db[session_id]["history"])
 
-def generate_response(client, messages):
+def generate_response(session_id, client, temp_db):
     """
     Generate a response to a conversation using OpenAI's API.
 
     Args:
         client (OpenAI): The OpenAI client instance.
-        messages (list): The conversation history.
+        session_id (str): The ID of the conversation.
+        temp_db (dict): The temporary database.
 
     Returns:
         str: The generated response.
     """
-    intent = get_response(client, prompts.classify_intent_prompt_v0() + str(messages[-CONTEXT_LEN:]), [])
+    intent = get_response(client, pl.classify_intent_prompt_v0() + str(temp_db[session_id]["history"][-CONTEXT_LEN:]), [])
     logger.info(f"Detected intent: {intent}")
     if "2" in intent:
-        return handle_crisis_message(client, messages)
+        return handle_crisis_message(session_id, client, temp_db)
     elif "3" in intent:
-        return get_response(client, prompts.systemprompt_v1_mini() + prompts.robust_v0(), messages)
+        return get_response(client, pl.systemprompt_v1_mini() + pl.robust_v0(), temp_db[session_id]["history"])
 
-    logger.info(f"Convo length: {len(messages)}")
-    if len(messages) >= MIN_CONVO_LEN:
-        should_end = get_response(client, prompts.idenfity_end_prompt_v0() + str(messages[-CONTEXT_LEN:]), [])
+    logger.info(f"Convo length: {len(temp_db[session_id]["history"])}")
+    if len(temp_db[session_id]["history"]) >= MIN_CONVO_LEN:
+        should_end = get_response(client, pl.idenfity_end_prompt_v0() + str(temp_db[session_id]["history"][-CONTEXT_LEN:]), [])
         logger.info(f"should_end: {should_end}")
         if "1" in should_end:
-            return get_response(client, prompts.close_convo_prompt_v0(), messages)
+            return get_response(client, pl.close_convo_prompt_v0(), temp_db[session_id]["history"])
 
-    return get_response(client, prompts.systemprompt_v1(), messages)
+    return get_response(client, pl.systemprompt_v1(), temp_db[session_id]["history"])
