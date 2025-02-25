@@ -4,7 +4,7 @@
  * providing real-time interaction with the therapy chatbot.
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import {
   MainContainer,
@@ -33,15 +33,75 @@ function App() {
   const [hasSelectedMode, setHasSelectedMode] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
-    // Initialize chat after mode selection
-    const initializeChat = (mode) => {
-        setIsVoiceMode(mode);
-        setHasSelectedMode(true);
-        setMessages([{ 
-          message: `Hi, I'm Talk2Me! ${mode ? 'Press space or the button below to start speaking.' : 'What\'s on your mind?'}`, 
-          sender: "bot" 
-        }]);
+  // Add recognition state
+  const [recognition, setRecognition] = useState(null);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          handleSend(transcript);
+          setIsRecording(false);
+        };
+
+        recognition.onerror = (event) => {
+          console.error('Speech recognition error:', event.error);
+          setIsRecording(false);
+        };
+
+        recognition.onend = () => {
+          setIsRecording(false);
+        };
+
+        setRecognition(recognition);
+      }
+    }
+  }, []);
+
+    // Add toggle recording function
+    const toggleRecording = () => {
+        if (!recognition) return;
+    
+        if (isRecording) {
+          recognition.stop();
+        } else {
+          recognition.start();
+          setIsRecording(true);
+        }
       };
+
+  // Update keyboard event handling
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (isVoiceMode && event.code === 'Space') {
+        event.preventDefault();
+        toggleRecording();
+      }
+    };
+
+    if (isVoiceMode) {
+      window.addEventListener('keydown', handleKeyPress);
+      return () => window.removeEventListener('keydown', handleKeyPress);
+    }
+  }, [isVoiceMode, isRecording]);
+
+  // Initialize chat after mode selection
+  const initializeChat = (mode) => {
+    setIsVoiceMode(mode);
+    setHasSelectedMode(true);
+    setMessages([{ 
+        message: `Hi, I'm Talk2Me! ${mode ? 'Press space to start speaking.' : 'What\'s on your mind?'}`, 
+        sender: "bot" 
+    }]);
+  };
 
   /**
    * Handles sending messages to the backend server and updating the chat UI.
@@ -141,12 +201,23 @@ function App() {
                     </Message>
                 ))}
                 </MessageList>
-                <MessageInput 
-                placeholder="Type your message here..."
-                onSend={handleSend}
-                attachButton={false}
-                className="message-input"
-                />
+                {isVoiceMode ? (
+                  <div className="voice-controls">
+                  <button 
+                    onClick={toggleRecording}
+                    className={`voice-button ${isRecording ? 'recording' : ''}`}
+                  >
+                    {isRecording ? 'Stop Recording' : 'Start Recording'}
+                  </button>
+                </div>
+                ) : (
+                    <MessageInput 
+                    placeholder="Type your message here..."
+                    onSend={handleSend}
+                    attachButton={false}
+                    className="message-input"
+                    />
+                )}
             </ChatContainer>
             </MainContainer>
         </div>
