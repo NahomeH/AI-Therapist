@@ -12,9 +12,13 @@ logger = logging.getLogger(__name__)
 CRISIS_MESSAGE = """
 It sounds like you're going through a really difficult time. As an AI, I'm not equipped to provide 
 crisis support, and I would highly recommend seeking out professional resources. If you need immediate help,
-you can contact Crisis Text Line by texting HOME to 741741 or call the Suicide & Crisis Lifeline at 988.
-Please let me know if there's anything else I can do for you. You're not alone.
+you can contact Crisis Text Line by texting HOME to 741741, call the Suicide & Crisis Lifeline at 988, or even
+go to the emergency room you feel like you need. Please let me know if there's anything else I can do for you. You can get through this.
 """
+
+MIN_CONVO_LEN = 10
+SENT_CRISIS = False
+CONTEXT_LEN = 3
 
 def get_response(client, sys_prompt, messages):
     """
@@ -42,6 +46,14 @@ def get_response(client, sys_prompt, messages):
         logger.error(error_msg)
         return error_msg
 
+def handle_crisis_message(client, messages):
+    global SENT_CRISIS
+    logger.info(f"SENT_CRISIS original status: {SENT_CRISIS}")
+    if not SENT_CRISIS:
+        SENT_CRISIS = True
+        return CRISIS_MESSAGE
+    return get_response(client, prompts.handle_crisis_prompt_v0(), messages)
+
 def generate_response(client, messages):
     """
     Generate a response to a conversation using OpenAI's API.
@@ -53,10 +65,18 @@ def generate_response(client, messages):
     Returns:
         str: The generated response.
     """
-    intent = get_response(client, prompts.classify_intent_prompt_v0(), [messages[-1]])
+    intent = get_response(client, prompts.classify_intent_prompt_v0() + str(messages[-CONTEXT_LEN:]), [])
     logger.info(f"Detected intent: {intent}")
     if "2" in intent:
-        return CRISIS_MESSAGE
+        return handle_crisis_message(client, messages)
     elif "3" in intent:
         return get_response(client, prompts.systemprompt_v1_mini() + prompts.robust_v0(), messages)
+
+    logger.info(f"Convo length: {len(messages)}")
+    if len(messages) >= MIN_CONVO_LEN:
+        should_end = get_response(client, prompts.idenfity_end_prompt_v0() + str(messages[-CONTEXT_LEN:]), [])
+        logger.info(f"should_end: {should_end}")
+        if "1" in should_end:
+            return get_response(client, prompts.close_convo_prompt_v0(), messages)
+
     return get_response(client, prompts.systemprompt_v1(), messages)

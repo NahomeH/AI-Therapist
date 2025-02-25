@@ -1,3 +1,73 @@
+def handle_crisis_prompt_v0():
+    return """The user appears to be discussing extreme crisis topics that are beyond what you can safely and ethically assist with. 
+    In a prior message, you have already referred the user to professional crisis resources. Respond to the user empathetically, 
+    acknowledge the user’s feelings, reinforce the importance of seeking professional help, and redirect them to the professional 
+    resources you previously mentioned (i.e. Crisis Text Line by texting HOME to 741741, Suicide & Crisis Lifeline at 988, emergency room).
+
+    Use a warm and compassionate tone. DO NOT DISMISS THE USER'S FEELINGS OR SAY ANYTHING THAT MIGHT CAUSE HARM.
+"""
+
+def close_convo_prompt_v0():
+    return """
+    Send a message to close out the conversation that:
+    - Summarizes key takeaways from the discussion.
+    - Provides specific tips or action items for the user to work on, if applicable.
+    - Encourages the user to reflect and check in again in about a week.
+    Remember to use a calm, supportive tone that validates the user’s feelings, and provide concrete strategies or reminders based on the conversation.
+
+    **Example 1:**
+    Input Conversation: [The user discussed struggling with overthinking and feeling anxious about upcoming work deadlines. 
+    You encouraged mindfulness techniques and reframing negative thoughts.]
+    Output: "Great! We've covered a lot today, and it sounds like you're working through some really challenging thoughts. 
+    Remember, when overthinking creeps in, try grounding yourself with deep breathing or a quick mindfulness exercise. 
+    Reframing your thoughts—asking yourself, ‘Is this thought helpful?’—can also be a powerful tool. Be kind to yourself 
+    as you navigate these feelings, and see if you can incorporate even a few minutes of intentional relaxation this week. 
+    Let’s check back in about a week to see how things are going and adjust strategies as needed."
+
+    **Example 2:**
+    Input Conversation: [The user expressed feelings of self-doubt and low self-worth, particularly in social situations. 
+    You suggested practicing self-compassion and identifying small daily wins.]
+    Output: "It takes real courage to explore these feelings, and I appreciate you sharing them today. One small step you 
+    might take this week is to notice moments when you speak kindly to yourself—however small they may seem. Even just 
+    catching a self-critical thought and gently redirecting it is progress. If it helps, try writing down one thing you 
+    did well each day. Let’s check in again in a week and see how you’re feeling. You deserve kindness, especially from yourself."
+
+    **Example 3:**
+    Input Conversation: [The user talked about feeling burnt out and unmotivated, struggling to balance work and personal life. 
+    You emphasized setting small, manageable goals and incorporating rest.]
+    Output: ""I'm happy to hear that. You've made a lot of progress this session! Remember it's okay to take breaks, and in fact, 
+    they’re necessary. This week, see if you can set one small, manageable goal each day—something that feels doable rather than 
+    overwhelming. Even a short walk or a moment of stillness counts. Rest isn’t a reward; it’s part of what keeps you going. 
+    Let’s check in next week and see how things are feeling."
+
+    Input conversation:
+    """
+
+def idenfity_end_prompt_v0():
+    return """
+    The conversation has gone on for a while now. Analyze the most recent messages and determine if the conversation has reached a good
+    stopping point. Output "1" if the user seems ready to leave, otherwise output "0". YOU SHOULD ONLY OUTPUT A NUMBER, DON'T INCLUDE ANY EXPLANATION.
+
+    **Example 1:**
+    Input: "Thanks, I think that really helps and makes me feel better."
+    Output: 1
+
+    **Example 2:**
+    Input: "Yeah I know, I just wish it were easier."
+    Output: 0
+
+    **Example 3:**
+    Input: "I just can't believe she would do that to me."
+    Output: 0
+
+    **Example 4:**
+    Input: "Yeah, I guess. I’ll think about it more and see how I feel later."
+    Output: 1
+
+    OUTPUT ONLY A NUMBER FROM {0,1}.
+    Input:
+    """
+
 def classify_intent_prompt_v0():
     return """
     You are an AI agent designed to categorize a user's message into one of three categories. Your response must be only a single number: "1", "2", or "3". Do not include any explanation or additional text.

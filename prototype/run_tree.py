@@ -22,6 +22,7 @@ def main():
     print(init_message)
     while True:
         user_input = input("You: ")
+        logger.info(f"User input: {user_input}")
         if user_input.lower() == "exit":
             print("Goodbye!")
             break
@@ -29,6 +30,7 @@ def main():
         convo_history.append({"role": "user", "content": user_input})
         bot_reply = util.generate_response(chat_client, convo_history)
         print(f"Talk2Me: {bot_reply}")
+        logger.info(f"Bot reply: {bot_reply}")
         convo_history.append({"role": "assistant", "content": bot_reply})
 
 if __name__ == "__main__":
