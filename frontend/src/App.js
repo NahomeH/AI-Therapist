@@ -60,7 +60,8 @@ function App() {
         },
         body: JSON.stringify({
           message: text,
-          sessionId: 'default'
+          sessionId: 'default',
+          isVoiceMode: isVoiceMode
         })
       });
 
@@ -82,7 +83,7 @@ function App() {
     } finally {
       setIsTyping(false);
     }
-  }, [messages]); // Add messages as a dependency
+  }, [messages, isVoiceMode]); // Add messages as a dependency
 
   // Update the useEffect for speech recognition to include handleSend
   useEffect(() => {
@@ -204,14 +205,14 @@ function App() {
                 ))}
                 </MessageList>
                 {isVoiceMode ? (
-                  <div className="voice-controls">
-                  <button 
-                    onClick={toggleRecording}
-                    className={`voice-button ${isRecording ? 'recording' : ''}`}
-                  >
-                    {isRecording ? 'Stop Recording' : 'Start Recording'}
-                  </button>
-                </div>
+                    <div className="voice-controls">
+                    <button 
+                        onClick={toggleRecording}
+                        className={`voice-button ${isRecording ? 'recording' : ''}`}
+                    >
+                        {isRecording ? 'Stop Recording' : 'Start Recording'}
+                    </button>
+                    </div>
                 ) : (
                     <MessageInput 
                     placeholder="Type your message here..."
