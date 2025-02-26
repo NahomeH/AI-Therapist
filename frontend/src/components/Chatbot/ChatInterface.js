@@ -57,6 +57,7 @@ function ChatInterface() {
         },
         body: JSON.stringify({
           message: text,
+          sessionId: 'default'
         })
       });
 
