@@ -1,14 +1,21 @@
 import os
 import signal
+from pynput import keyboard
+
+import sounddevice as sd
+import numpy as np
 
 import openai
 from openai import OpenAI
-from elevenlabs.client import ElevenLabs
-from elevenlabs.conversational_ai.conversation import Conversation, ClientTools
-from elevenlabs.conversational_ai.default_audio_interface import DefaultAudioInterface
+from google.cloud import speech
+from google.cloud.speech_v2.types import cloud_speech
+from google.protobuf import duration_pb2
+from google.cloud import texttospeech
 from dotenv import load_dotenv
 
 from prompts import systemprompt_v0, cbtprompt_v0, robust_v0
+from speech2text import AUDIO_RATE, AUDIO_CHUNK, MicrophoneStream, get_final_transcription
+
 
 load_dotenv()
 
@@ -23,22 +30,51 @@ class TherapyStyle:
     CBT = "2"      # Cognitive Behavioral Therapy approach
 
 def setup_clients():
-    """Initialize OpenAI and ElevenLabs clients"""
+    """Initialize OpenAI and Google speech-to-text clients"""
     chat_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
-    audio_client = ElevenLabs(api_key=os.environ["ELEVENLABS_API_KEY"])
-    audio_agent_id = os.environ["ELEVENLABS_AGENT_ID"]
+    
+    # speech-to-text setup
+    language_code = "en-US"
+    speech2text_client = speech.SpeechClient()
+    
+    # # Sets the flag to enable voice activity events and timeout
+    # speech_start_timeout = 30
+    # speech_end_timeout = 30
+    # speech_start_timeout = duration_pb2.Duration(seconds=speech_start_timeout)
+    # speech_end_timeout = duration_pb2.Duration(seconds=speech_end_timeout)
+    # voice_activity_timeout = (
+    #     speech.StreamingRecognitionConfig.VoiceActivityTimeout(
+    #         speech_start_timeout=speech_start_timeout,
+    #         speech_end_timeout=speech_end_timeout,
+    #     )
+    # )
 
-    return chat_client, audio_client, audio_agent_id
+    speech2text_config = speech.RecognitionConfig(
+        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+        sample_rate_hertz=AUDIO_RATE,
+        language_code=language_code,
+        enable_automatic_punctuation=True
+    )
+    streaming_config = speech.StreamingRecognitionConfig(
+        config=speech2text_config, 
+        interim_results=False, 
+        single_utterance=True,
+        # enable_voice_activity_events=True,
+        # voice_activity_timeout=voice_activity_timeout
+    )
 
-def setup_logging():
-    """Setup logging tools"""
-    def log_message(parameters):
-        message = parameters.get("message")
-        print(message)
-        
-    client_tools = ClientTools()
-    client_tools.register("logMessage", log_message)
-    return client_tools
+    # text-to-speech
+    text2speech_client = texttospeech.TextToSpeechClient()
+
+    text2speech_audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.LINEAR16,
+        sample_rate_hertz=48000,
+    )
+    voice = texttospeech.VoiceSelectionParams(
+                                language_code="en-US",
+                                ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL,
+                            )
+    return chat_client, speech2text_client, streaming_config, text2speech_client, text2speech_audio_config, voice
 
 def get_therapy_config():
     """Get user's preferred therapy mode and style"""
@@ -53,11 +89,11 @@ Mode:
 [T] Text-based therapy
 [V] Voice-based therapy
 
-Style (for text mode):
+Style:
 [1] General Counseling
 [2] Cognitive Behavioral Therapy (CBT)
 
-Enter T1/T2 for text mode or V for voice mode (or 'exit'): """
+Enter T1/T2 for text mode or V1/V2 for voice mode (or 'exit'): """
 
     while True:
         choice = input(prompt).lower()
@@ -69,39 +105,97 @@ Enter T1/T2 for text mode or V for voice mode (or 'exit'): """
             if style in therapy_options:
                 return TherapyMode.TEXT, therapy_options[style]()
                 
-        elif choice == 'v':
-            return TherapyMode.VOICE, None
+        elif choice.startswith('v'):
+            style = choice[1:]
+            if style in therapy_options:
+                return TherapyMode.VOICE, therapy_options[style]()
             
         print("Invalid choice. Please try again.")
 
-def handle_voice_therapy(audio_client, audio_agent_id):
-    """Handle voice-based therapy session using ElevenLabs.
+def handle_voice_therapy(system_prompt, chat_client, speech2text_client, streaming_config, text2speech_client, audio_config, voice):
+    """Handle voice-based therapy session using Google APIs.
     
     Sets up a voice conversation with real-time transcription and synthesis.
     The session continues until interrupted with Ctrl+C.
     
     Args:
-        audio_client (ElevenLabs): Initialized ElevenLabs client
-        audio_agent_id (str): ID of the ElevenLabs voice agent to use
         
     Returns:
         None
     """
-    """Handle voice-based therapy session"""
-    conversation = Conversation(
-        audio_client,
-        audio_agent_id,
-        requires_auth=False,
-        audio_interface=DefaultAudioInterface(),
-        callback_agent_response=lambda response: print(f"Talk2Me: {response}"),
-        callback_agent_response_correction=lambda original, corrected: print(f"Talk2Me: {original} -> {corrected}"),
-        callback_user_transcript=lambda transcript: print(f"Me: {transcript}")
-    )
-    
-    conversation.start_session()
-    signal.signal(signal.SIGINT, lambda sig, frame: conversation.end_session())
-    conversation_id = conversation.wait_for_session_end()
-    print(f"Conversation ID: {conversation_id}")
+    def on_press(key):
+        if key == keyboard.Key.space:
+            return False
+    running = True
+    def signal_handler(signum, frame):
+        nonlocal running
+        running = False
+        raise KeyboardInterrupt
+
+    # Signal handler for Ctrl+C
+    original_handler = signal.signal(signal.SIGINT, signal_handler)
+    try:
+        conversation = [{"role": "developer", "content": system_prompt + robust_v0()}]
+        print("\nTalk2Me: What would you like to talk about?")
+        print("(Press Ctrl+C to end the session)")
+        while running:
+            try:
+                # Wait for spacebar press
+                with keyboard.Listener(on_press=on_press) as listener:
+                    print("Press SPACE to speak...")
+                    listener.join()
+                print("Recording... (Release SPACE to stop)")
+
+                with MicrophoneStream(AUDIO_RATE, AUDIO_CHUNK) as stream:
+                    audio_generator = stream.generator()
+                    requests = (
+                        speech.StreamingRecognizeRequest(audio_content=content)
+                        for content in audio_generator
+                    )
+
+                    responses = speech2text_client.streaming_recognize(streaming_config, requests)
+
+                    # Get user input with automatic silence detection
+                    user_input = get_final_transcription(responses)
+                    if not user_input.strip():
+                        continue
+                        
+                    print(f"You: {user_input}")
+                    conversation.append({"role": "user", "content": user_input})
+
+                    try:
+                        response = chat_client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=conversation,
+                            timeout=30.0
+                        )
+                        bot_reply = response.choices[0].message.content
+                        print(f"Talk2Me: {bot_reply}")
+                        conversation.append({"role": "assistant", "content": bot_reply})
+                        synthesis_input = texttospeech.SynthesisInput(text=bot_reply)
+                        response = text2speech_client.synthesize_speech(
+                            input=synthesis_input, voice=voice, audio_config=audio_config
+                        )
+
+                        audio = np.frombuffer(response.audio_content, dtype=np.int16)
+                        sd.play(audio, 48000)
+                        sd.wait()
+
+                    except Exception as e:
+                        print(f"Error: {e}")
+                        print("Please try speaking again.")
+                        continue
+            except KeyboardInterrupt:
+                break
+
+            except Exception as e:
+                print(f"Unexpected error: {e}")
+                print("Restarting audio stream...")
+                continue
+
+    finally:
+        signal.signal(signal.SIGINT, original_handler)
+        print("\nThank you for using Talk2Me. Take care!")
 
 def handle_text_therapy(system_prompt, chat_client):
     """Handle text-based therapy session using OpenAI.
@@ -116,7 +210,6 @@ def handle_text_therapy(system_prompt, chat_client):
     Returns:
         None
     """
-    """Handle text-based therapy session"""
     conversation = [{"role": "developer", "content": system_prompt + robust_v0()}]
     print("\nTalk2Me: What would you like to talk about?")
 
@@ -131,18 +224,18 @@ def handle_text_therapy(system_prompt, chat_client):
         try:
             response = chat_client.chat.completions.create(
                 model="gpt-4o-mini",
-                messages=conversation
+                messages=conversation,
+                timeout=30.0
             )
             bot_reply = response.choices[0].message.content
             print(f"Talk2Me: {bot_reply}")
             conversation.append({"role": "assistant", "content": bot_reply})
 
         except openai.error.OpenAIError as e:
-            print(f"An error occurred: {e}")
+            print(f"OPENAI API error: {e}")
 
 def main():
-    chat_client, audio_client, audio_agent_id = setup_clients()
-    client_tools = setup_logging()
+    chat_client, speech2text_client, streaming_config, text2speech_client, audio_config, voice = setup_clients()
 
     print("Welcome to Talk2Me, your 24/7 AI therapist!")
     print("Please take a deep breath and ensure you're in a comfortable, private space.")
@@ -153,7 +246,7 @@ def main():
         return
         
     if mode == TherapyMode.VOICE:
-        handle_voice_therapy(audio_client, audio_agent_id)
+        handle_voice_therapy(system_prompt, chat_client, speech2text_client, streaming_config, text2speech_client, audio_config, voice)
     else:
         handle_text_therapy(system_prompt, chat_client)
 

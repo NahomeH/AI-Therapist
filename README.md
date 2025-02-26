@@ -13,15 +13,15 @@ To begin, clone the repository to your local machine using the following command
   git clone https://github.com/winsonc7/CS224G.git
 ```
 
-## 2. Set up environment variables
+## 2. Set up environment variables and authentication
 
-### a. Obtain OpenAI/ElevenLabs API keys and set ElevenLabs audio agent ID
+### a. Obtain OpenAI API keys
 
-To run the agent, you'll need an OpenAI API key. You'll also need an ElevenLabs API key if testing our voice therapy solution.
+To run the agent, you'll need an OpenAI API key.
 
-### b.  Save the API keys and audio agent ID in a .env file
+### b.  Save the API keys in a .env file
 
-  Store your API keys and our ElevenLabs Agent ID (aB08fUqZnmePxNvmkWTM) in a `.env` file. Follow these steps:
+  Store your API keys in a `.env` file. Follow these steps:
 
 - Create a .env file
 
@@ -33,10 +33,18 @@ To run the agent, you'll need an OpenAI API key. You'll also need an ElevenLabs 
 
   ```
   OPENAI_API_KEY=xxxxx
-  ELEVENLABS_API_KEY=xxxxx
-  ELEVENLABS_AGENT_ID=aB08fUqZnmePxNvmkWTM
   ```
   Replace `xxxxx` with your actual API keys.
+
+### c. Authorize with Google Cloud API
+- [Install](https://cloud.google.com/sdk/docs/install) the gcloud CLI
+
+- Set up local authroization credentials for your account and set up project ID (talk2me-451917):
+  ```
+  gcloud init
+  
+  gcloud auth application-default login
+  ```
   
 ## 3. Install Backend Dependencies
 

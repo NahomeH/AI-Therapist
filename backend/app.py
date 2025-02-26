@@ -1,11 +1,14 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
+import sounddevice as sd
+import numpy as np
 from openai import OpenAI
 from dotenv import load_dotenv
+from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
-from util import generate_response
+from util import generate_response, tts_config
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -15,13 +18,39 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+chat_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+tts_client = texttospeech.TextToSpeechClient()
 
 # Store state objects in memory
 # TODO: replace with a database
 temp_db = {}
 conversations = {}
 crisis_status = {}
+
+def generate_and_play_audio(text):
+    """
+    Generate speech from text using Google Cloud TTS and play it.
+    
+    Args:
+        text (str): Text to convert to speech
+    """
+    try:
+        text2speech_audio_config, voice = tts_config()
+        synthesis_input = texttospeech.SynthesisInput(text=text)
+        
+        response = tts_client.synthesize_speech(
+            input=synthesis_input,
+            voice=voice,
+            audio_config=text2speech_audio_config
+        )
+        
+        audio_data = np.frombuffer(response.audio_content, dtype=np.int16)
+        sd.play(audio_data, samplerate=48000)
+        sd.wait()  # Wait until audio finishes playing
+        return None
+    except Exception as e:
+        print(f"Unexpected error in text-to-speech: {str(e)}")
+        return str(e)
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -40,6 +69,7 @@ def chat():
     data = request.json
     session_id = data.get('sessionId', 'default')
     user_message = data.get('message')
+    is_voice_mode = data.get('isVoiceMode', False)
     logger.info(f"Received message: {user_message}. Session ID: {session_id}")
     
     if session_id not in temp_db:
@@ -47,9 +77,18 @@ def chat():
         temp_db[session_id] = {"history": init_convo, "crisis_status": False}
     
     temp_db[session_id]["history"].append({"role": "user", "content": user_message})
-    agent_response = generate_response(session_id, client, temp_db)
+    agent_response = generate_response(session_id, chat_client, temp_db)
     temp_db[session_id]["history"].append({"role": "assistant", "content": agent_response})
     logger.info(f"Response: {agent_response}")
+
+    if is_voice_mode:
+        error = generate_and_play_audio(agent_response)
+        if error:
+            return jsonify({
+                "message": agent_response,
+                "sessionId": session_id,
+                "error": error
+            })
     
     return jsonify({
         "message": agent_response,
