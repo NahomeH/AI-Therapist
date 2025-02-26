@@ -6,10 +6,16 @@ import numpy as np
 from openai import OpenAI
 from dotenv import load_dotenv
 from google.cloud import texttospeech
-from prompts import cbtprompt_v0, robust_v0
+import logging
+from logging_config import setup_logging
+from util import generate_response
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Configure logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 chat_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
@@ -23,27 +29,11 @@ voice = texttospeech.VoiceSelectionParams(
                             ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL,
                         )
 
-# Store conversations in memory (for demo purposes)
+# Store state objects in memory
+# TODO: replace with a database
+temp_db = {}
 conversations = {}
-
-def get_ai_response(conversation):
-    """
-    Generate an AI response using OpenAI's chat completion API.
-    
-    Args:
-        conversation (list): List of message dictionaries containing the conversation history
-        
-    Returns:
-        str: The AI's response text, or error message if the API call fails
-    """
-    try:
-        response = chat_client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=conversation
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return str(e)
+crisis_status = {}
 
 def generate_and_play_audio(text):
     """
@@ -87,26 +77,28 @@ def chat():
     session_id = data.get('sessionId', 'default')
     user_message = data.get('message')
     is_voice_mode = data.get('isVoiceMode', False)
+    logger.info(f"Received message: {user_message}. Session ID: {session_id}")
     
-    if session_id not in conversations:
-        system_prompt = cbtprompt_v0() + robust_v0()
-        conversations[session_id] = [{"role": "developer", "content": system_prompt}]
+    if session_id not in temp_db:
+        init_convo = [{"role": "assistant", "content": "Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?"}]
+        temp_db[session_id] = {"history": init_convo, "crisis_status": False}
     
-    conversations[session_id].append({"role": "user", "content": user_message})
-    bot_reply = get_ai_response(conversations[session_id])
-    conversations[session_id].append({"role": "assistant", "content": bot_reply})
+    temp_db[session_id]["history"].append({"role": "user", "content": user_message})
+    agent_response = generate_response(session_id, chat_client, temp_db)
+    temp_db[session_id]["history"].append({"role": "assistant", "content": agent_response})
+    logger.info(f"Response: {agent_response}")
 
     if is_voice_mode:
-        error = generate_and_play_audio(bot_reply)
+        error = generate_and_play_audio(agent_response)
         if error:
             return jsonify({
-                "message": bot_reply,
+                "message": agent_response,
                 "sessionId": session_id,
                 "error": error
             })
     
     return jsonify({
-        "message": bot_reply,
+        "message": agent_response,
         "sessionId": session_id
     })
 
@@ -121,10 +113,11 @@ def reset_conversation():
     Returns:
         JSON with status: 'success' if session was reset
     """
+    logger.info("Resetting conversation...")
     data = request.json
     session_id = data.get('sessionId', 'default')
-    if session_id in conversations:
-        del conversations[session_id]
+    if session_id in temp_db:
+        del temp_db[session_id]
     return jsonify({"status": "success"})
 
 if __name__ == '__main__':

@@ -14,6 +14,7 @@ import {
   MessageInput,
   TypingIndicator,
   ConversationHeader,
+  Avatar,
 } from "@chatscope/chat-ui-kit-react";
 import "./App.css";
 
@@ -26,7 +27,7 @@ import "./App.css";
  */
 function App() {
   const [messages, setMessages] = useState([
-    { message: "Hi, I'm Talk2Me! What's on your mind?", sender: "bot" },
+    { message: "Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?", sender: "bot" },
   ]);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -183,11 +184,11 @@ function App() {
             <ChatContainer>
                 <ConversationHeader>
                 <ConversationHeader.Content 
-                    userName="Talk2Me"
+                    userName="Jennifer"
                 />
                 </ConversationHeader>
                 <MessageList 
-                typingIndicator={isTyping ? <TypingIndicator content="Talk2Me is thinking..." /> : null}
+                typingIndicator={isTyping ? <TypingIndicator content="Jennifer is thinking..." /> : null}
                 className="message-list"
                 >
                 {messages.map((msg, i) => (
@@ -199,7 +200,12 @@ function App() {
                         direction: msg.sender === "user" ? "outgoing" : "incoming",
                         position: "single"
                     }}
+                      avatarPosition={msg.sender === "bot" ? "tl" : undefined}
+                      avatarSpacer={msg.sender === "user"}
                     >
+                      {msg.sender === "bot" && (
+                        <Avatar src="/robot-icon.png" name="Jennifer" />
+                      )}
                     <Message.Header sender={msg.sender === "bot" ? "Talk2Me" : "You"} />
                     </Message>
                 ))}
