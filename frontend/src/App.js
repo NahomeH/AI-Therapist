@@ -148,7 +148,7 @@ function App() {
     setIsVoiceMode(mode);
     setHasSelectedMode(true);
     setMessages([{ 
-        message: `Hi, I'm Talk2Me! ${mode ? 'Press space to start speaking.' : 'What\'s on your mind?'}`, 
+        message: `Hi, I'm Jennifer! ${mode ? 'Press space to start speaking.' : 'What\'s on your mind?'}`, 
         sender: "bot" 
     }]);
   };
@@ -206,7 +206,7 @@ function App() {
                       {msg.sender === "bot" && (
                         <Avatar src="/robot-icon.png" name="Jennifer" />
                       )}
-                    <Message.Header sender={msg.sender === "bot" ? "Talk2Me" : "You"} />
+                    <Message.Header sender={msg.sender === "bot" ? "Jennifer" : "You"} />
                     </Message>
                 ))}
                 </MessageList>
