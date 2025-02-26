@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
-from util import generate_response
+from util import generate_response, tts_config
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -20,14 +20,6 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 chat_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
 tts_client = texttospeech.TextToSpeechClient()
-text2speech_audio_config = texttospeech.AudioConfig(
-    audio_encoding=texttospeech.AudioEncoding.LINEAR16,
-    sample_rate_hertz=48000,
-)
-voice = texttospeech.VoiceSelectionParams(
-                            language_code="en-US",
-                            ssml_gender=texttospeech.SsmlVoiceGender.NEUTRAL,
-                        )
 
 # Store state objects in memory
 # TODO: replace with a database
@@ -43,6 +35,7 @@ def generate_and_play_audio(text):
         text (str): Text to convert to speech
     """
     try:
+        text2speech_audio_config, voice = tts_config()
         synthesis_input = texttospeech.SynthesisInput(text=text)
         
         response = tts_client.synthesize_speech(

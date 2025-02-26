@@ -1,5 +1,6 @@
 import logging
 from logging_config import setup_logging
+from google.cloud import texttospeech
 import prompt_lib as pl
 
 # Configure logging
@@ -9,6 +10,18 @@ logger = logging.getLogger(__name__)
 CRISIS_MESSAGE = "It sounds like you're going through a really difficult time. As an AI, I'm not equipped to provide crisis support, and I would highly recommend seeking out professional resources. If you need immediate help, you can contact Crisis Text Line by texting HOME to 741741, call the Suicide & Crisis Lifeline at 988, or even go to the emergency room you feel like you need. Please let me know if there's anything else I can do for you. You can get through this."
 MIN_CONVO_LEN = 10
 CONTEXT_LEN = 3
+
+def tts_config():
+    text2speech_audio_config = texttospeech.AudioConfig(
+        audio_encoding=texttospeech.AudioEncoding.LINEAR16,
+        sample_rate_hertz=48000,
+    )
+    voice = texttospeech.VoiceSelectionParams(
+                            language_code="en-US",
+                            name="Leda",
+                            ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
+                        )
+    return text2speech_audio_config, voice
 
 def get_response(client, sys_prompt, messages):
     """
