@@ -37,5 +37,13 @@ export const authSchema = yup.object().shape({
     .when('$isSignup', {
       is: true,
       then: schema => schema.required('Date of birth is required')
-    })
+    }),
+  disclaimer: yup.boolean()
+  .when('$isSignup', {
+    is: true,
+    then: schema => schema
+      .required('You must accept the terms and disclaimer')
+      .oneOf([true], 'You must accept the terms and disclaimer')
+  }),
+  
 });

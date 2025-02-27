@@ -1,9 +1,8 @@
-// Custom hook for form state & submission logic
-
+// hooks/useAuthForm.js
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { authSchema } from '../utils/schema';
-import { useState } from 'react';
 
 const defaultValues = {
   fullName: '',
@@ -11,17 +10,21 @@ const defaultValues = {
   email: '',
   password: '',
   confirmPassword: '',
-  dateOfBirth: ''
+  dateOfBirth: '',
+  disclaimer: false
 };
 
 export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn, signUp }) => {
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
+    setValue,
+    getValues
   } = useForm({
     defaultValues,
     resolver: yupResolver(authSchema),
@@ -31,15 +34,23 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
 
   const onSubmit = async (data) => {
     setError(null);
+    setIsSubmitting(true);
+    
     try {
       if (isLogin) {
+        // Login flow
         const { error: signInError } = await signIn({
           email: data.email,
           password: data.password
         });
-        if (signInError) throw signInError;
+        
+        if (signInError) {
+          throw signInError;
+        }
+        
         onSignInSuccess();
       } else {
+        // Signup flow - directly attempt signup without checking email
         const { error: signUpError } = await signUp({
           email: data.email,
           password: data.password,
@@ -47,15 +58,24 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
             data: {
               full_name: data.fullName,
               preferred_name: data.preferredName,
-              date_of_birth: data.dateOfBirth
+              date_of_birth: data.dateOfBirth,
+              disclaimer_accepted: data.disclaimer,
+              disclaimer_accepted_at: new Date().toISOString()
             }
           }
         });
-        if (signUpError) throw signUpError;
+        
+        if (signUpError) {
+          throw signUpError;
+        }
+        
         onSignUpSuccess();
       }
     } catch (err) {
+      // Handle and display any errors
       setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -65,6 +85,8 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
     errors,
     isSubmitting,
     error,
-    reset
+    reset,
+    setValue,
+    getValues
   };
 };
