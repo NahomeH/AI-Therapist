@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { authSchema } from '../utils/schema';
-import { supabase } from '../../../supabase';
 
 const defaultValues = {
   fullName: '',
@@ -18,7 +17,6 @@ const defaultValues = {
 export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn, signUp }) => {
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   const {
     register,
@@ -34,39 +32,13 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
     context: { isSignup: !isLogin }
   });
 
-  /**
-   * Check if email already exists in Supabase auth
-   * Uses a safer approach that won't create accidental users
-   * 
-   * @param {string} email - Email to check
-   * @returns {Promise<boolean>} - Whether the email exists
-   */
-  const checkEmailExists = async (email) => {
-    try {
-      // Use the password recovery flow to check if email exists
-      // This won't create accounts or send emails if configured correctly
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        // Don't actually send the email - just check if account exists
-        redirectTo: window.location.origin
-      });
-
-      // If there's no error, the user exists
-      // If we get "User not found" error, the email is available
-      return !error || !error.message.includes('User not found');
-    } catch (err) {
-      console.error('Error checking email:', err);
-      // Default to false (allow signup) in case of unexpected errors
-      return false;
-    }
-  };
-
   const onSubmit = async (data) => {
     setError(null);
     setIsSubmitting(true);
     
     try {
       if (isLogin) {
-        // Login flow - no changes needed
+        // Login flow
         const { error: signInError } = await signIn({
           email: data.email,
           password: data.password
@@ -78,18 +50,7 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
         
         onSignInSuccess();
       } else {
-        // Signup flow - check if email exists first
-        setIsCheckingEmail(true);
-        const emailExists = await checkEmailExists(data.email);
-        setIsCheckingEmail(false);
-        
-        if (emailExists) {
-          setError('This email is already registered. Please log in instead.');
-          setIsSubmitting(false);
-          return;
-        }
-        
-        // If email doesn't exist, proceed with signup
+        // Signup flow - directly attempt signup without checking email
         const { error: signUpError } = await signUp({
           email: data.email,
           password: data.password,
@@ -123,7 +84,6 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
     handleSubmit: handleSubmit(onSubmit),
     errors,
     isSubmitting,
-    isCheckingEmail,
     error,
     reset,
     setValue,

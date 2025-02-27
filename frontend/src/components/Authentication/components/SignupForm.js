@@ -14,9 +14,6 @@ function SignupForm({ onSwitchToLogin, onSignupSuccess }) {
     signUp
   });
   
-  // Check if error is about existing email
-  const isEmailExistsError = form.error && form.error.includes('already registered');
-  
   return (
     <>
       <form onSubmit={form.handleSubmit} className="auth-form">
@@ -74,22 +71,19 @@ function SignupForm({ onSwitchToLogin, onSignupSuccess }) {
         />
 
         {form.error && (
-          <div className={`auth-error ${isEmailExistsError ? 'email-exists-error' : ''}`}>
+          <div className="auth-error">
             <p>{form.error}</p>
-            {isEmailExistsError}
           </div>
         )}
 
         <button 
           type="submit" 
           className="submit-btn"
-          disabled={form.isSubmitting || form.isCheckingEmail}
+          disabled={form.isSubmitting}
         >
           {form.isSubmitting 
             ? 'Processing...' 
-            : form.isCheckingEmail
-              ? 'Checking email...'
-              : 'Sign Up'
+            : 'Sign Up'
           }
         </button>
       </form>
