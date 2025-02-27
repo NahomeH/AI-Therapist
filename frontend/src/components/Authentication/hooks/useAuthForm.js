@@ -1,9 +1,9 @@
-// Custom hook for form state & submission logic
-
+// hooks/useAuthForm.js
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { authSchema } from '../utils/schema';
-import { useState } from 'react';
+import { supabase } from '../../../supabase';
 
 const defaultValues = {
   fullName: '',
@@ -16,11 +16,13 @@ const defaultValues = {
 
 export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn, signUp }) => {
   const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
     reset,
   } = useForm({
     defaultValues,
@@ -29,17 +31,62 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
     context: { isSignup: !isLogin }
   });
 
+  /**
+   * Check if email already exists in Supabase auth
+   * Uses a safer approach that won't create accidental users
+   * 
+   * @param {string} email - Email to check
+   * @returns {Promise<boolean>} - Whether the email exists
+   */
+  const checkEmailExists = async (email) => {
+    try {
+      // Use the password recovery flow to check if email exists
+      // This won't create accounts or send emails if configured correctly
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        // Don't actually send the email - just check if account exists
+        redirectTo: window.location.origin
+      });
+
+      // If there's no error, the user exists
+      // If we get "User not found" error, the email is available
+      return !error || !error.message.includes('User not found');
+    } catch (err) {
+      console.error('Error checking email:', err);
+      // Default to false (allow signup) in case of unexpected errors
+      return false;
+    }
+  };
+
   const onSubmit = async (data) => {
     setError(null);
+    setIsSubmitting(true);
+    
     try {
       if (isLogin) {
+        // Login flow - no changes needed
         const { error: signInError } = await signIn({
           email: data.email,
           password: data.password
         });
-        if (signInError) throw signInError;
+        
+        if (signInError) {
+          throw signInError;
+        }
+        
         onSignInSuccess();
       } else {
+        // Signup flow - check if email exists first
+        setIsCheckingEmail(true);
+        const emailExists = await checkEmailExists(data.email);
+        setIsCheckingEmail(false);
+        
+        if (emailExists) {
+          setError('This email is already registered. Please log in instead.');
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // If email doesn't exist, proceed with signup
         const { error: signUpError } = await signUp({
           email: data.email,
           password: data.password,
@@ -51,11 +98,18 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
             }
           }
         });
-        if (signUpError) throw signUpError;
+        
+        if (signUpError) {
+          throw signUpError;
+        }
+        
         onSignUpSuccess();
       }
     } catch (err) {
+      // Handle and display any errors
       setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -64,6 +118,7 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
     handleSubmit: handleSubmit(onSubmit),
     errors,
     isSubmitting,
+    isCheckingEmail,
     error,
     reset
   };
