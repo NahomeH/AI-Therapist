@@ -24,8 +24,6 @@ tts_client = texttospeech.TextToSpeechClient()
 # Store state objects in memory
 # TODO: replace with a database
 temp_db = {}
-conversations = {}
-crisis_status = {}
 
 def generate_and_play_audio(text):
     """
@@ -94,24 +92,6 @@ def chat():
         "message": agent_response,
         "sessionId": session_id
     })
-
-@app.route('/api/reset', methods=['POST'])
-def reset_conversation():
-    """
-    Reset a conversation session.
-    
-    Expects JSON payload with:
-        - sessionId (str): Session to reset
-        
-    Returns:
-        JSON with status: 'success' if session was reset
-    """
-    logger.info("Resetting conversation...")
-    data = request.json
-    session_id = data.get('sessionId', 'default')
-    if session_id in temp_db:
-        del temp_db[session_id]
-    return jsonify({"status": "success"})
 
 if __name__ == '__main__':
     app.run(host='localhost', debug=True, port=5000)
