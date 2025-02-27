@@ -10,7 +10,7 @@
   align-items: center;
   min-height: 100vh;
   padding: 1rem;
-  background: linear-gradient(135deg, #f6f5ff 0%, #8d63ff 100%);
+  background: linear-gradient(135deg, #fff767 0%, #d3ffd3 100%);
 }
 
 .auth-window {
@@ -34,7 +34,7 @@
 
 .auth-title {
   font-family: 'Outfit', sans-serif;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #d0ff00 0%, #29ef2c 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -103,12 +103,12 @@
 .input-icon {
   position: absolute;
   left: 1rem;
-  color: #8b5cf6;
+  color: #00a914;
 }
 
 .form-input {
   width: 100%;
-  background: #f0f5ff;
+  background: #ffffe2;
   border: 1px solid rgba(139, 92, 246, 0.1);
   border-radius: 12px;
   padding: 0.75rem 1rem 0.75rem 2.75rem;
@@ -118,7 +118,7 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #8b5cf6;
+  border-color: #9fd85f;
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
@@ -128,7 +128,7 @@
 }
 
 .form-input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(60%) sepia(11%) saturate(3000%) hue-rotate(220deg) brightness(100%);
+  filter: invert(60%) sepia(59%) saturate(638%) hue-rotate(60deg) brightness(95%);
   cursor: pointer;
 }
 
@@ -152,10 +152,10 @@
   min-width: 18px;
   min-height: 18px;
   margin-top: 3px;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(8, 94, 0, 0.3);
   border-radius: 4px;
   background-color: white;
-  accent-color: #8b5cf6;
+  accent-color: #29ef2c;
 }
 
 .checkbox-label {
@@ -193,7 +193,7 @@
 .agreement-checkbox {
   width: 18px;
   height: 18px;
-  accent-color: #8b5cf6;
+  accent-color: #29ef2c;
   cursor: pointer;
   position: relative;
   z-index: 1;
@@ -221,7 +221,7 @@
   gap: 0.25rem;
   background: transparent;
   border: none;
-  color: #8b5cf6;
+  color: #3bd100;
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
@@ -231,8 +231,8 @@
 }
 
 .view-terms-btn:hover {
-  color: #7c3aed;
-  background-color: rgba(139, 92, 246, 0.05);
+  color: #00a506;
+  background-color: rgba(59, 209, 0, 0.05);
   text-decoration: underline;
 }
 
@@ -297,7 +297,7 @@
   font-size: 1.25rem;
   font-weight: 600;
   margin: 0;
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #d0ff00 0%, #29ef2c 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -356,7 +356,7 @@
 
 .scroll-indicator {
   font-size: 0.875rem;
-  color: #8b5cf6;
+  color: #3bd100;
   text-align: center;
 }
 
@@ -384,7 +384,7 @@
 
 .modal-accept-btn {
   padding: 0.5rem 1.25rem;
-  background: #8b5cf6;
+  background: #8dce2a;
   border: none;
   border-radius: 8px;
   color: white;
@@ -394,11 +394,11 @@
 }
 
 .modal-accept-btn:hover:not(:disabled) {
-  background: #7c3aed;
+  background: #3bd100;
 }
 
 .modal-accept-btn:disabled {
-  background: #c4b5fd;
+  background: #8fff45;
   cursor: not-allowed;
 }
 
@@ -406,7 +406,7 @@
 /* Button Styles        */
 /* ==================== */
 .submit-btn {
-  background: #8b5cf6;
+  background: #8dce2a;
   color: white;
   border: none;
   border-radius: 12px;
@@ -416,16 +416,16 @@
   cursor: pointer;
   transition: all 0.2s ease;
   margin-top: 0.5rem;
-  box-shadow: 0 4px 6px rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 6px rgba(141, 206, 42, 0.2);
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: #7c3aed;
-  box-shadow: 0 6px 8px rgba(139, 92, 246, 0.25);
+  background: #3bd100;
+  box-shadow: 0 6px 8px rgba(8, 94, 0, 0.25);
 }
 
 .submit-btn:disabled {
-  background: #c4b5fd;
+  background: #8fff45;
   cursor: not-allowed;
   box-shadow: none;
 }
@@ -434,7 +434,7 @@
   width: 100%;
   background: transparent;
   border: none;
-  color: #8b5cf6;
+  color: #63d330;
   padding: 0.5rem;
   cursor: pointer;
   font-size: 0.875rem;
@@ -443,7 +443,7 @@
 }
 
 .auth-toggle-btn:hover {
-  color: #7c3aed;
+  color: #00a506;
 }
 
 /* ==================== */
@@ -545,7 +545,7 @@
 }
 
 .legal-modal-content::-webkit-scrollbar-thumb {
-  background-color: #c4b5fd;
+  background-color: #a6e772;
   border-radius: 8px;
 }
 
