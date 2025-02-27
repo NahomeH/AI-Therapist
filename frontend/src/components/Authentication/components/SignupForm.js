@@ -4,6 +4,7 @@ import { User, Smile, Calendar, Mail, Lock} from 'lucide-react';
 import { useAuth } from '../AuthContext';
 import { useAuthForm } from '../hooks/useAuthForm';
 import FormField from './FormField';
+import LegalCheckbox from './LegalCheckbox';
 
 function SignupForm({ onSwitchToLogin, onSignupSuccess }) {
   const { signUp } = useAuth();
@@ -64,6 +65,12 @@ function SignupForm({ onSwitchToLogin, onSignupSuccess }) {
           error={form.errors.dateOfBirth}
           registration={form.register('dateOfBirth')}
           max={new Date().toISOString().split('T')[0]}
+        />
+
+        <LegalCheckbox 
+          register={form.register} 
+          error={form.errors.disclaimer}
+          setValue={form.setValue}
         />
 
         {form.error && (

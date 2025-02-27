@@ -11,7 +11,8 @@ const defaultValues = {
   email: '',
   password: '',
   confirmPassword: '',
-  dateOfBirth: ''
+  dateOfBirth: '',
+  disclaimer: false
 };
 
 export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn, signUp }) => {
@@ -24,6 +25,8 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
+    getValues
   } = useForm({
     defaultValues,
     resolver: yupResolver(authSchema),
@@ -94,7 +97,9 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
             data: {
               full_name: data.fullName,
               preferred_name: data.preferredName,
-              date_of_birth: data.dateOfBirth
+              date_of_birth: data.dateOfBirth,
+              disclaimer_accepted: data.disclaimer,
+              disclaimer_accepted_at: new Date().toISOString()
             }
           }
         });
@@ -120,6 +125,8 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
     isSubmitting,
     isCheckingEmail,
     error,
-    reset
+    reset,
+    setValue,
+    getValues
   };
 };
