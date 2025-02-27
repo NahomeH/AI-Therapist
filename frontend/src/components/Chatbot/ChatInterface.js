@@ -234,6 +234,7 @@ function ChatInterface() {
                         placeholder="Type your message here..."
                         onSend={handleSend}
                         attachButton={false}
+                        sendButton={false}
                         className="message-input"
                     />
                 )}
