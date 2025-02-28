@@ -30,5 +30,5 @@
 - Implemented low-latency, high-quality transcription and voice response with Google Cloud APIs
 
  ### Sneha Jayaganthan
-- Largely inactive this sprint due to family emergency
-- Working on user ability to customize agent style 
+- Implemented a feature that provides user ability to customize agent style
+- Working on integrating the preferences to produce tone-specific responses.
