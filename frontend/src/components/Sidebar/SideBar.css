@@ -1,0 +1,239 @@
+/* components/Layout/SideBar.css */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
+  background: white;
+  border-radius: 0 20px 20px 0;
+  box-shadow: 0 12px 28px rgba(139, 92, 246, 0.15);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+  padding-top: 16px;
+  transition: width 0.3s ease;
+}
+
+/* Collapsed Sidebar State */
+.sidebar.collapsed {
+  width: 60px;
+}
+
+/* Toggle Button */
+.sidebar-toggle-button {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #4a5568;
+  transition: all 0.2s ease;
+}
+
+.sidebar-toggle-button:hover {
+  background-color: #f0f0f0;
+  color: #00a914;
+}
+
+/* Navigation Menu */
+.sidebar-menu {
+  margin-top: 40px; /* Space for the toggle button */
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: #4a5568;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  text-decoration: none;
+}
+
+.sidebar-menu-item:hover {
+  background: #ffffe2;
+  color: #00a914;
+}
+
+.sidebar-menu-item-active {
+  background: #ffffe2;
+  color: #00a914;
+}
+
+/* Footer Section - Refined */
+.sidebar-footer {
+  padding: 16px 16px 24px;
+  border-top: 1px solid rgba(139, 92, 246, 0.1);
+  margin-top: auto;
+}
+
+/* User Info - Refined */
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  padding-bottom: 16px;
+}
+
+.sidebar-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  color: #667080;
+}
+
+.sidebar-user-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-user-label {
+  font-size: 11px;
+  color: #909090;
+  margin-bottom: 2px;
+}
+
+.sidebar-user-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: #667080;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Logout Link - New Style */
+.sidebar-logout-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 6px 8px;
+  margin-left: -8px;
+  border-radius: 6px;
+  color: #667080;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-logout-link:hover {
+  background: #f8f8f8;
+  color: #00a914;
+}
+
+/* Collapsed State Styles */
+.sidebar.collapsed .sidebar-menu-item {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.sidebar.collapsed .sidebar-menu-item span,
+.sidebar.collapsed .sidebar-user-info,
+.sidebar.collapsed .sidebar-logout-link span {
+  display: none;
+}
+
+.sidebar.collapsed .sidebar-user {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.sidebar.collapsed .sidebar-user-avatar {
+  margin-right: 0;
+}
+
+.sidebar.collapsed .sidebar-footer {
+  padding: 16px 0 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sidebar.collapsed .sidebar-logout-link {
+  margin: 0;
+  padding: 8px;
+  justify-content: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar, .sidebar.collapsed {
+    width: 100%;
+    height: 60px;
+    flex-direction: row;
+    padding-top: 0;
+    border-radius: 0 0 20px 20px;
+  }
+  
+  .sidebar-toggle-button {
+    position: relative;
+    top: 0;
+    left: 0;
+    margin: 0 16px;
+  }
+  
+  .sidebar-menu {
+    margin-top: 0;
+    flex-direction: row;
+    flex: 1;
+    overflow-y: hidden;
+    overflow-x: auto;
+    padding: 0 10px;
+  }
+  
+  .sidebar-menu::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .sidebar-footer {
+    border-top: 0;
+    padding: 0 16px;
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    margin-top: 0;
+  }
+  
+  .sidebar-user, .sidebar.collapsed .sidebar-user {
+    display: none;
+  }
+  
+  .sidebar-logout-link, .sidebar.collapsed .sidebar-logout-link {
+    padding: 8px;
+    margin: 0;
+  }
+  
+  .sidebar-logout-link span, .sidebar.collapsed .sidebar-logout-link span {
+    display: none;
+  }
+}

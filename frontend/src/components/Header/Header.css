@@ -1,0 +1,52 @@
+.app-header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 16px 24px;
+    z-index: 10;
+    height: 64px;
+    /* Removed backdrop filter and background */
+    background-color: transparent;
+    /* Removed shadow */
+    box-shadow: none;
+    /* Removed border */
+    border: none;
+  }
+  
+  .app-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 18px;
+    /* Removed padding */
+    padding: 0;
+    /* Removed background */
+    background: transparent;
+    /* Removed box shadow */
+    box-shadow: none;
+    border-radius: 0;
+    cursor: default;
+  }
+  
+  .app-logo-icon {
+    color: #29ef2c;
+  }
+  
+  .app-logo-text {
+    color: #4a9b00;
+    font-weight: 700;
+  }
+  
+  @media (max-width: 768px) {
+    .app-header {
+      padding: 12px 16px;
+      height: 56px;
+    }
+    
+    .app-logo {
+      font-size: 16px;
+    }
+  }

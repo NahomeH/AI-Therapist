@@ -1,0 +1,31 @@
+/* components/Layout/Layout.css */
+.layout-main {
+    margin-left: 240px;
+    min-height: 100vh;
+    width: calc(100% - 240px);
+    background: linear-gradient(135deg, #fff767 0%, #d3ffd3 100%);
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s ease, width 0.3s ease;
+  }
+  
+  .layout-content {
+    flex: 1;
+    overflow: auto;
+    padding: 0 24px 24px;
+  }
+  
+  /* Collapsed Sidebar State */
+  .layout-main.sidebar-collapsed {
+    margin-left: 60px;
+    width: calc(100% - 60px);
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .layout-main, .layout-main.sidebar-collapsed {
+      margin-left: 0;
+      margin-top: 60px;
+      width: 100%;
+    }
+  }

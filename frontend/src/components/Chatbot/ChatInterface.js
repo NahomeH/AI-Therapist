@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Authentication/AuthContext";
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import {
@@ -18,12 +17,10 @@ import {
   ConversationHeader,
   Avatar
 } from "@chatscope/chat-ui-kit-react";
-import { LogOut } from 'lucide-react';
 import "./ChatInterface.css";
 
 function ChatInterface() {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   console.log("Current user:", {user});
   const [messages, setMessages] = useState([
     { message: "Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?", sender: "bot" },
@@ -34,15 +31,6 @@ function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false);
   // Add recognition state
   const [recognition, setRecognition] = useState(null);
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      navigate('/auth');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
 
   const handleSend = useCallback(async (text) => {
     if (!text.trim()) return;
@@ -187,15 +175,6 @@ function ChatInterface() {
                 <ChatContainer>
                 <ConversationHeader>
                     <ConversationHeader.Content userName="Jennifer" />
-                    <ConversationHeader.Actions>
-                    <button 
-                        onClick={handleLogout}
-                        className="logout-button"
-                    >
-                        <LogOut size={20} />
-                        <span>Logout</span>
-                    </button>
-                    </ConversationHeader.Actions>
                 </ConversationHeader>
                 <MessageList 
                 typingIndicator={isTyping ? <TypingIndicator content="Jennifer is thinking..." /> : null}
