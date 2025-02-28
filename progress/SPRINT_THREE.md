@@ -30,4 +30,5 @@
 - Implemented low-latency, high-quality transcription and voice response with Google Cloud APIs
 
  ### Sneha Jayaganthan
-- Inactive this sprint due to family emergency
+- Largely inactive this sprint due to family emergency
+- Working on user ability to customize agent style 
