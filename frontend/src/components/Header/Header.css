@@ -4,9 +4,9 @@
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    padding: 16px 24px;
+    padding: 10px 24px; /* Reduced vertical padding from 16px to 10px */
     z-index: 10;
-    height: 64px;
+    height: 48px; /* Reduced height from 64px to 48px */
     /* Removed backdrop filter and background */
     background-color: transparent;
     /* Removed shadow */
@@ -42,8 +42,8 @@
   
   @media (max-width: 768px) {
     .app-header {
-      padding: 12px 16px;
-      height: 56px;
+      padding: 8px 16px; /* Reduced vertical padding from 12px to 8px */
+      height: 40px; /* Reduced height from 56px to 40px */
     }
     
     .app-logo {
