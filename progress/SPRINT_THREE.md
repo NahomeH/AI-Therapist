@@ -23,7 +23,7 @@
 - Main contributer to markdown files and sprint presentation slides
 
 ### Nahome Hagos
-- Created frontend for sign-up / login page + terms and conditions
+- Created frontend for sidebar, sign-up / login page + terms and conditions
 - Implemented user accounts + email authentification using Supabase
 
 ### Amelia Kuang
