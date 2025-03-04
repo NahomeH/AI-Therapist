@@ -24,6 +24,7 @@ body {
 }
 
 .chat-window {
+  position: relative;
   width: 60%;
   min-width: 600px;
   height: 80vh;
@@ -393,4 +394,130 @@ body {
       0% { transform: scale(1); }
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
+}
+
+/* Back button styling */
+.back-button {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 171, 11, 0.2);
+      background-color: white;
+      color: #003702;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.back-button:hover {
+      background-color: #f4ffdf;
+      color: #00ab0b;
+      border-color: rgba(0, 171, 11, 0.3);
+}
+
+.back-button:active {
+      transform: scale(0.97);
+      background-color: #e8ffd8;
+}
+
+/* Warning modal styles */
+.modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s ease;
+}
+
+.warning-modal {
+      background-color: white;
+      border-radius: 16px;
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      animation: modalSlideIn 0.3s ease-out;
+}
+
+.warning-icon {
+      font-size: 36px;
+      margin-bottom: 16px;
+}
+
+.warning-modal h3 {
+      color: #2d3748;
+      margin: 0 0 12px 0;
+      font-size: 1.25rem;
+}
+
+.warning-modal p {
+      color: #666;
+      margin: 0 0 24px 0;
+      font-size: 0.95rem;
+      line-height: 1.5;
+}
+
+.modal-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+}
+
+.modal-button {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+}
+
+.modal-button.cancel {
+      background-color: #f3f4f6;
+      color: #4b5563;
+}
+
+.modal-button.cancel:hover {
+      background-color: #e5e7eb;
+}
+
+.modal-button.confirm {
+      background-color: #ffd500;
+      color: #2d3748;
+      box-shadow: 0 2px 4px rgba(255, 213, 0, 0.2);
+}
+
+.modal-button.confirm:hover {
+      background-color: #e6c200;
+      box-shadow: 0 4px 6px rgba(255, 213, 0, 0.25);
+}
+
+.modal-button:active {
+      transform: scale(0.98);
+}
+
+@keyframes modalSlideIn {
+      from {
+            opacity: 0;
+            transform: translateY(-20px);
+      }
+      to {
+            opacity: 1;
+            transform: translateY(0);
+      }
 }

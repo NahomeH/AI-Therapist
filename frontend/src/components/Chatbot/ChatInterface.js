@@ -5,7 +5,6 @@
  */
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Authentication/AuthContext";
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import {
@@ -18,12 +17,11 @@ import {
   ConversationHeader,
   Avatar
 } from "@chatscope/chat-ui-kit-react";
-import { LogOut } from 'lucide-react';
+import { ArrowLeft, Mic, Keyboard } from "lucide-react";
 import "./ChatInterface.css";
 
 function ChatInterface() {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   console.log("Current user:", {user});
   const [messages, setMessages] = useState([
     { message: "Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?", sender: "bot" },
@@ -34,15 +32,8 @@ function ChatInterface() {
   const [isTyping, setIsTyping] = useState(false);
   // Add recognition state
   const [recognition, setRecognition] = useState(null);
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      navigate('/auth');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
+  // Add state for mode change warning modal
+  const [showWarningModal, setShowWarningModal] = useState(false);
 
   const handleSend = useCallback(async (text) => {
     if (!text.trim()) return;
@@ -155,7 +146,27 @@ function ChatInterface() {
         sender: "bot" 
     }]);
   };
-
+  
+  // Show warning modal when back button is clicked
+  const handleBackButtonClick = () => {
+    setShowWarningModal(true);
+  };
+  
+  // Confirm going back to mode selection
+  const confirmModeChange = () => {
+    // Reset any ongoing recordings if in voice mode
+    if (isVoiceMode && isRecording && recognition) {
+      recognition.stop();
+      setIsRecording(false);
+    }
+    setHasSelectedMode(false);
+    setShowWarningModal(false);
+  };
+  
+  // Cancel mode change
+  const cancelModeChange = () => {
+    setShowWarningModal(false);
+  };
 
   return (
     <div className="app-container">
@@ -183,19 +194,15 @@ function ChatInterface() {
       ) : (
         <div className="chat-layout">
             <div className="chat-window">
+            <button onClick={handleBackButtonClick} className="back-button" title="Go back to chat mode selection">
+                <ArrowLeft size={20} />
+                <span>Change Chat Mode</span>
+                {isVoiceMode ? <Mic size={16} /> : <Keyboard size={16} />}
+            </button>
             <MainContainer>
                 <ChatContainer>
                 <ConversationHeader>
                     <ConversationHeader.Content userName="Jennifer" />
-                    <ConversationHeader.Actions>
-                    <button 
-                        onClick={handleLogout}
-                        className="logout-button"
-                    >
-                        <LogOut size={20} />
-                        <span>Logout</span>
-                    </button>
-                    </ConversationHeader.Actions>
                 </ConversationHeader>
                 <MessageList 
                 typingIndicator={isTyping ? <TypingIndicator content="Jennifer is thinking..." /> : null}
@@ -243,8 +250,26 @@ function ChatInterface() {
             </div>
         </div>
       )}
+      
+      {/* Warning Modal */}
+      {showWarningModal && (
+        <div className="modal-overlay">
+          <div className="warning-modal">
+            <div className="warning-icon">⚠️</div>
+            <h3>Change Chat Mode?</h3>
+            <p>Your current conversation will be reset if you return to mode selection.</p>
+            <div className="modal-buttons">
+              <button className="modal-button cancel" onClick={cancelModeChange}>
+                Cancel
+              </button>
+              <button className="modal-button confirm" onClick={confirmModeChange}>
+                Change Mode
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );  
 }
 export default ChatInterface;
-

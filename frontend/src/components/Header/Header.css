@@ -1,0 +1,52 @@
+.app-header {
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    padding: 10px 24px; /* Reduced vertical padding from 16px to 10px */
+    z-index: 10;
+    height: 48px; /* Reduced height from 64px to 48px */
+    /* Removed backdrop filter and background */
+    background-color: transparent;
+    /* Removed shadow */
+    box-shadow: none;
+    /* Removed border */
+    border: none;
+  }
+  
+  .app-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 18px;
+    /* Removed padding */
+    padding: 0;
+    /* Removed background */
+    background: transparent;
+    /* Removed box shadow */
+    box-shadow: none;
+    border-radius: 0;
+    cursor: default;
+  }
+  
+  .app-logo-icon {
+    color: #29ef2c;
+  }
+  
+  .app-logo-text {
+    color: #4a9b00;
+    font-weight: 700;
+  }
+  
+  @media (max-width: 768px) {
+    .app-header {
+      padding: 8px 16px; /* Reduced vertical padding from 12px to 8px */
+      height: 40px; /* Reduced height from 56px to 40px */
+    }
+    
+    .app-logo {
+      font-size: 16px;
+    }
+  }
