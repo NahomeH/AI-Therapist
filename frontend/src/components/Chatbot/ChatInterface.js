@@ -23,9 +23,7 @@ import "./ChatInterface.css";
 function ChatInterface() {
   const { user } = useAuth();
   console.log("Current user:", {user});
-  const [messages, setMessages] = useState([
-    { message: "Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?", sender: "bot" },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [hasSelectedMode, setHasSelectedMode] = useState(false);
@@ -54,7 +52,8 @@ function ChatInterface() {
         },
         body: JSON.stringify({
           message: text,
-          sessionId: 'default',
+          sessionId: user?.id || 'default',
+          userId: user?.id || 'anonymous',
           isVoiceMode: isVoiceMode
         })
       });
@@ -138,13 +137,57 @@ function ChatInterface() {
   }, [isVoiceMode, toggleRecording]); // Add toggleRecording as a dependency
 
   // Initialize chat after mode selection
-  const initializeChat = (mode) => {
+  const initializeChat = async (mode) => {
     setIsVoiceMode(mode);
     setHasSelectedMode(true);
-    setMessages([{ 
+    setIsTyping(true);
+    try {
+      // Call the firstChat API to get the initial message
+      const response = await fetch('http://127.0.0.1:5000/api/firstChat', {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: user?.id || 'default',
+          userId: user?.id || 'anonymous',
+          userName: user?.user_metadata?.preferred_name || 'there'
+        })
+      });
+
+      console.log('First chat response:', response);
+      const data = await response.json();
+      
+      if (data.success) {
+        let welcomeMessage = data.message;
+        // Add mode-specific instructions
+        if (mode) {
+          welcomeMessage += ' Press space to start speaking.';
+        }
+        
+        setMessages([{ 
+          message: welcomeMessage, 
+          sender: "bot" 
+        }]);
+      } else {
+        // Fallback message if API call fails
+        setMessages([{ 
+          message: `Hi, I'm Jennifer! ${mode ? 'Press space to start speaking.' : 'What\'s on your mind?'}`, 
+          sender: "bot" 
+        }]);
+      }
+    } catch (error) {
+      console.error('Error initializing chat:', error);
+      // Fallback message if API call fails
+      setMessages([{ 
         message: `Hi, I'm Jennifer! ${mode ? 'Press space to start speaking.' : 'What\'s on your mind?'}`, 
         sender: "bot" 
-    }]);
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
   
   // Show warning modal when back button is clicked

@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
-from util import generate_response, tts_config
+from util import generate_response, tts_config, get_first_message
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # Configure logging
 setup_logging()
@@ -52,8 +52,14 @@ def generate_and_play_audio(text):
         print(f"Unexpected error in text-to-speech: {str(e)}")
         return str(e)
 
-@app.route('/api/chat', methods=['POST'])
+@app.route('/api/chat', methods=['POST', 'OPTIONS'])
 def chat():
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
     """
     Handle chat messages from the client.
     
@@ -72,10 +78,6 @@ def chat():
     user_message = data.get('message')
     is_voice_mode = data.get('isVoiceMode', False)
     logger.info(f"Received message: {user_message}. Session ID: {session_id}")
-    
-    if session_id not in temp_db:
-        init_convo = [{"role": "assistant", "content": "Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?"}]
-        temp_db[session_id] = {"history": init_convo, "crisis_status": False}
     
     temp_db[session_id]["history"].append({"role": "user", "content": user_message})
     agent_response = generate_response(session_id, chat_client, temp_db)
@@ -126,6 +128,40 @@ def newUser():
 
     return jsonify({"success": True})
 
+
+@app.route('/api/firstChat', methods=['POST', 'OPTIONS'])
+def firstChat():
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
+    """
+    Retrieves the first message for a new session.
+    
+    Expects JSON payload with:
+        - sessionId (str): Unique identifier for the session
+        - userId (str): Unique identifier for the user
+        - userName (str): User's preferred name
+        
+    Returns:
+        JSON containing:
+        - message (str): AI's response
+    """
+    session_id = request.json.get('sessionId')
+    user_id = request.json.get('userId')
+    preferred_name = request.json.get('userName')
+    logger.info(f"Session ID: {session_id}, User ID: {user_id}, Preferred name: {preferred_name}")
+    try:
+        message = get_first_message(chat_client, supabase_client, user_id, preferred_name)
+        init_convo = [{"role": "assistant", "content": message}]
+        temp_db[session_id] = {"history": init_convo, "crisis_status": False}
+    except Exception as e:
+        logger.error(f"Error retrieving first message: {e}")
+        return jsonify({"success": False, "error": str(e)})
+    
+    return jsonify({"success": True, "message": message})
 
 if __name__ == '__main__':
     app.run(host='localhost', debug=True, port=5000)

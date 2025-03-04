@@ -36,13 +36,14 @@ def get_response(client, sys_prompt, messages):
     """
     conversation = [{"role": "system", "content": sys_prompt}, *messages]
     try:
-        logger.debug("Sending request to OpenAI API")
+        logger.info(f"Sending request to OpenAI API with sys_prompt: {sys_prompt}")
+        logger.info(f"Sending request to OpenAI API with messages: {messages}")
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=conversation
         )
         response_content = response.choices[0].message.content
-        logger.debug(f"Received API response: {response_content[:50]}...")
+        logger.info(f"Received API response: {response_content[:50]}...")
         return response_content
     except Exception as e:
         error_msg = f"An error occurred: {e}"
@@ -84,3 +85,18 @@ def generate_response(session_id, client, temp_db):
             return get_response(client, pl.close_convo_prompt_v0(), temp_db[session_id]["history"])
 
     return get_response(client, pl.systemprompt_v1(), temp_db[session_id]["history"])
+
+def get_history_summary(supabase_client, user_id):
+    response = supabase_client.table('users').select('history_summary').eq('user_id', user_id).execute()
+    logger.info(f"History summary: {response.data}")
+    if not response.data:
+        return None
+    return response.data[0].get('history_summary')
+
+def get_first_message(chat_client, supabase_client, user_id, user_name):
+    history = get_history_summary(supabase_client, user_id)
+    first_message = f"Hi {user_name}! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?"
+    if history:
+        first_message = get_response(chat_client, pl.systemprompt_v1_mini() + pl.start_convo_prompt_v0(user_name, history), [])
+    logger.info(f"First message: {first_message}")
+    return first_message  
