@@ -51,7 +51,7 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
         onSignInSuccess();
       } else {
         // Signup flow - directly attempt signup without checking email
-        const { error: signUpError } = await signUp({
+        const { data: signUpData, error: signUpError } = await signUp({
           email: data.email,
           password: data.password,
           options: {
@@ -67,6 +67,30 @@ export const useAuthForm = (isLogin, { onSignInSuccess, onSignUpSuccess, signIn,
         
         if (signUpError) {
           throw signUpError;
+        }
+        
+        // Call the backend API to add user to the database
+        try {
+          const response = await fetch('http://127.0.0.1:5000/api/newUser', {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userID: signUpData.user.id,
+              email: data.email,
+              fullName: data.fullName,
+              preferredName: data.preferredName || data.fullName
+            })
+          });
+          console.log(response);
+          console.log('User data successfully sent to backend');
+        } catch (apiError) {
+          console.error('Error sending user data to backend:', apiError);
+          // We don't throw here to avoid blocking the signup process
+          // The user is already created in Supabase auth
         }
         
         onSignUpSuccess();

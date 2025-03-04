@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
 import sounddevice as sd
+from supabase import create_client
 import numpy as np
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -18,8 +19,9 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 load_dotenv()
-chat_client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+chat_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 tts_client = texttospeech.TextToSpeechClient()
+supabase_client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_API_KEY'))
 
 # Store state objects in memory
 # TODO: replace with a database
@@ -58,6 +60,7 @@ def chat():
     Expects JSON payload with:
         - sessionId (str): Unique identifier for the chat session
         - message (str): User's message
+        - isVoiceMode (bool): True if the message is a voice input, False otherwise
         
     Returns:
         JSON containing:
@@ -92,6 +95,37 @@ def chat():
         "message": agent_response,
         "sessionId": session_id
     })
+
+@app.route('/api/newUser', methods=['POST'])
+def newUser():
+    """
+    Add user info to the Supabase table
+    
+    Expects JSON payload with:
+        - userID (str): Unique identifier for the user
+        - email (str): User's email
+        - fullName (str): User's full name
+        - preferredName (str): User's preferred name
+    """
+    data = request.json
+    user_id = data.get('userID')
+    email = data.get('email')
+    full_name = data.get('fullName')
+    preferred_name = data.get('preferredName')
+    logger.info(f"Adding user: {user_id}, {email}, {full_name}, {preferred_name}")
+    try:
+        supabase_client.table("users").insert({
+            "user_id": user_id,
+            "email": email,
+            "full_name": full_name,
+            "preferred_name": preferred_name
+        }).execute()
+    except Exception as e:
+        logger.error(f"Error adding user: {e}")
+        return jsonify({"success": False, "error": str(e)})
+
+    return jsonify({"success": True})
+
 
 if __name__ == '__main__':
     app.run(host='localhost', debug=True, port=5000)
