@@ -10,6 +10,8 @@ from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
 from util import generate_response, tts_config, get_first_message
+import ast
+import prompt_lib as pl
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
@@ -26,6 +28,8 @@ supabase_client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_A
 # Store state objects in memory
 # TODO: replace with a database
 temp_db = {}
+user_info = {}
+custom_sys_prompt = None
 
 def generate_and_play_audio(text):
     """
@@ -73,6 +77,8 @@ def chat():
         - message (str): AI's response
         - sessionId (str): Session identifier
     """
+    global custom_sys_prompt
+
     data = request.json
     session_id = data.get('sessionId', 'default')
     user_message = data.get('message')
@@ -80,7 +86,7 @@ def chat():
     logger.info(f"Received message: {user_message}. Session ID: {session_id}")
     
     temp_db[session_id]["history"].append({"role": "user", "content": user_message})
-    agent_response = generate_response(session_id, chat_client, temp_db)
+    agent_response = generate_response(session_id, chat_client, temp_db, custom_sys_prompt)
     temp_db[session_id]["history"].append({"role": "assistant", "content": agent_response})
     logger.info(f"Response: {agent_response}")
 
@@ -120,7 +126,8 @@ def newUser():
             "user_id": user_id,
             "email": email,
             "full_name": full_name,
-            "preferred_name": preferred_name
+            "preferred_name": preferred_name,
+            "history_summary": "[]"
         }).execute()
     except Exception as e:
         logger.error(f"Error adding user: {e}")
@@ -141,7 +148,7 @@ def firstChat():
     Retrieves the first message for a new session.
     
     Expects JSON payload with:
-        - sessionId (str): Unique identifier for the session
+        - sessionId (str): Unique identifier for the session (currently the same as userId)
         - userId (str): Unique identifier for the user
         - userName (str): User's preferred name
         
@@ -149,12 +156,62 @@ def firstChat():
         JSON containing:
         - message (str): AI's response
     """
+    global custom_sys_prompt
+
     session_id = request.json.get('sessionId')
     user_id = request.json.get('userId')
     preferred_name = request.json.get('userName')
     logger.info(f"Session ID: {session_id}, User ID: {user_id}, Preferred name: {preferred_name}")
+    
+    db_user_info = supabase_client.table('users').select('*').eq('user_id', user_id).execute()
+    if not db_user_info:
+        return jsonify({"success": False, "error": "User not found"})
+    user_info = db_user_info.data[0]
+    logger.info(f"User info: {user_info}")
+    if user_info['history_summary']:
+        custom_sys_prompt = pl.systemprompt_v1() + pl.inject_history(preferred_name, user_info['history_summary'])
+    else:
+        custom_sys_prompt = pl.systemprompt_v1()
+    
     try:
-        message = get_first_message(chat_client, supabase_client, user_id, preferred_name)
+        message = get_first_message(chat_client, preferred_name, custom_sys_prompt, user_info['history_summary'])
+        init_convo = [{"role": "assistant", "content": message}]
+        temp_db[session_id] = {"history": init_convo, "crisis_status": False}
+    except Exception as e:
+        logger.error(f"Error retrieving first message: {e}")
+        return jsonify({"success": False, "error": str(e)})
+    
+    return jsonify({"success": True, "message": message})
+
+@app.route('/api/save', methods=['POST', 'OPTIONS'])
+def save():
+    """
+    Saves session to Supabase DB.
+    
+    This endpoint does not require any input data.
+        
+    Returns:
+        JSON containing:
+        - success (bool): True if the save was successful, False otherwise
+        - error (str): Error message if the save failed, empty string otherwise
+    """
+    session_id = request.json.get('sessionId')
+    user_id = request.json.get('userId')
+    preferred_name = request.json.get('userName')
+    logger.info(f"Session ID: {session_id}, User ID: {user_id}, Preferred name: {preferred_name}")
+    
+    db_user_info = supabase_client.table('users').select('*').eq('user_id', user_id).execute()
+    if not db_user_info:
+        return jsonify({"success": False, "error": "User not found"})
+    user_info = db_user_info.data[0]
+    logger.info(f"User info: {user_info}")
+    if user_info['history_summary']:
+        custom_sys_prompt = pl.systemprompt_v1() + pl.inject_history(preferred_name, user_info['history_summary'])
+    else:
+        custom_sys_prompt = pl.systemprompt_v1()
+    
+    try:
+        message = get_first_message(chat_client, preferred_name, custom_sys_prompt, user_info['history_summary'])
         init_convo = [{"role": "assistant", "content": message}]
         temp_db[session_id] = {"history": init_convo, "crisis_status": False}
     except Exception as e:
