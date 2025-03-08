@@ -185,6 +185,12 @@ def firstChat():
 
 @app.route('/api/save', methods=['POST', 'OPTIONS'])
 def save():
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        return response
     """
     Saves session to Supabase DB.
     
@@ -195,29 +201,6 @@ def save():
         - success (bool): True if the save was successful, False otherwise
         - error (str): Error message if the save failed, empty string otherwise
     """
-    session_id = request.json.get('sessionId')
-    user_id = request.json.get('userId')
-    preferred_name = request.json.get('userName')
-    logger.info(f"Session ID: {session_id}, User ID: {user_id}, Preferred name: {preferred_name}")
-    
-    db_user_info = supabase_client.table('users').select('*').eq('user_id', user_id).execute()
-    if not db_user_info:
-        return jsonify({"success": False, "error": "User not found"})
-    user_info = db_user_info.data[0]
-    logger.info(f"User info: {user_info}")
-    if user_info['history_summary']:
-        custom_sys_prompt = pl.systemprompt_v1() + pl.inject_history(preferred_name, user_info['history_summary'])
-    else:
-        custom_sys_prompt = pl.systemprompt_v1()
-    
-    try:
-        message = get_first_message(chat_client, preferred_name, custom_sys_prompt, user_info['history_summary'])
-        init_convo = [{"role": "assistant", "content": message}]
-        temp_db[session_id] = {"history": init_convo, "crisis_status": False}
-    except Exception as e:
-        logger.error(f"Error retrieving first message: {e}")
-        return jsonify({"success": False, "error": str(e)})
-    
     return jsonify({"success": True, "message": message})
 
 if __name__ == '__main__':

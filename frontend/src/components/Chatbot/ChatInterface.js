@@ -220,14 +220,21 @@ function ChatInterface() {
     setSaveChatStatus('initial');
   };
 
-  // Simulate saving chat
-  const saveChat = () => {
+  // Saving chat
+  const saveChat = async () => {
     setSaveChatStatus('saving');
-    
-    // Simulate 2-second saving process
-    setTimeout(() => {
-      setSaveChatStatus('saved');
-    }, 2000);
+    const response = await fetch('http://127.0.0.1:5000/api/save', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({})
+    });
+    const data = await response.json();
+    console.log('Save chat response:', data);
+    setSaveChatStatus('saved');
   };
 
   // Handle end session
