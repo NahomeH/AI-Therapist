@@ -17,11 +17,11 @@ import {
   ConversationHeader,
   Avatar
 } from "@chatscope/chat-ui-kit-react";
-import { ArrowLeft, Mic, Keyboard } from "lucide-react";
+import { ArrowLeft, Mic, Keyboard, Save } from "lucide-react";
 import "./ChatInterface.css";
 
 function ChatInterface() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   console.log("Current user:", {user});
   const [messages, setMessages] = useState([]);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
@@ -32,6 +32,9 @@ function ChatInterface() {
   const [recognition, setRecognition] = useState(null);
   // Add state for mode change warning modal
   const [showWarningModal, setShowWarningModal] = useState(false);
+  // Add state for save chat modal
+  const [showSaveChatModal, setShowSaveChatModal] = useState(false);
+  const [saveChatStatus, setSaveChatStatus] = useState('initial'); // 'initial', 'saving', 'saved'
 
   const handleSend = useCallback(async (text) => {
     if (!text.trim()) return;
@@ -211,6 +214,28 @@ function ChatInterface() {
     setShowWarningModal(false);
   };
 
+  // Handle save chat button click
+  const handleSaveChatClick = () => {
+    setShowSaveChatModal(true);
+    setSaveChatStatus('initial');
+  };
+
+  // Simulate saving chat
+  const saveChat = () => {
+    setSaveChatStatus('saving');
+    
+    // Simulate 2-second saving process
+    setTimeout(() => {
+      setSaveChatStatus('saved');
+    }, 2000);
+  };
+
+  // Handle end session
+  const handleEndSession = () => {
+    signOut();
+    setShowSaveChatModal(false);
+  };
+
   return (
     <div className="app-container">
       {!hasSelectedMode ? (
@@ -246,6 +271,12 @@ function ChatInterface() {
                 <ChatContainer>
                 <ConversationHeader>
                     <ConversationHeader.Content userName="Jennifer" />
+                    <ConversationHeader.Actions>
+                      <button onClick={handleSaveChatClick} className="save-chat-button">
+                        <Save size={16} />
+                        Save Chat
+                      </button>
+                    </ConversationHeader.Actions>
                 </ConversationHeader>
                 <MessageList 
                 typingIndicator={isTyping ? <TypingIndicator content="Jennifer is thinking..." /> : null}
@@ -309,6 +340,48 @@ function ChatInterface() {
                 Change Mode
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Save Chat Modal */}
+      {showSaveChatModal && (
+        <div className="modal-overlay">
+          <div className="warning-modal save-chat-modal">
+            {saveChatStatus === 'initial' && (
+              <>
+                <div className="warning-icon">💾</div>
+                <h3>Save Chat</h3>
+                <p>Would you like to save this chat to memory?</p>
+                <div className="modal-buttons">
+                  <button className="modal-button cancel" onClick={() => setShowSaveChatModal(false)}>
+                    Cancel
+                  </button>
+                  <button className="modal-button confirm" onClick={saveChat}>
+                    Save Chat
+                  </button>
+                </div>
+              </>
+            )}
+            
+            {saveChatStatus === 'saving' && (
+              <>
+                <div className="saving-spinner"></div>
+                <h3>Saving chat to memory...</h3>
+              </>
+            )}
+            
+            {saveChatStatus === 'saved' && (
+              <>
+                <div className="success-icon">✅</div>
+                <h3>Chat saved successfully!</h3>
+                <div className="modal-buttons single-button">
+                  <button className="modal-button end-session" onClick={handleEndSession}>
+                    End Session
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
