@@ -28,6 +28,7 @@ function ChatInterface() {
   const [isRecording, setIsRecording] = useState(false);
   const [hasSelectedMode, setHasSelectedMode] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   // Add recognition state
   const [recognition, setRecognition] = useState(null);
   // Add state for mode change warning modal
@@ -50,11 +51,17 @@ function ChatInterface() {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
       const source = audioContext.createBufferSource();
+
+      setIsPlaying(true);
+      source.onended = () => {
+        setIsPlaying(false);
+      }
       source.buffer = audioBuffer;
       source.connect(audioContext.destination);
       source.start(0);
     } catch (error) {
       console.error('Error playing audio:', error);
+      setIsPlaying(false);
     }
   };
 
@@ -315,7 +322,15 @@ function ChatInterface() {
                     </ConversationHeader.Actions>
                 </ConversationHeader>
                 <MessageList 
-                typingIndicator={isTyping ? <TypingIndicator content="Jennifer is thinking..." /> : null}
+                typingIndicator={
+                    isTyping ? (
+                      <TypingIndicator content="Jennifer is thinking..." /> 
+                    ) : (
+                      isVoiceMode && !isPlaying && !isRecording ? (
+                        <div className="voice-space-hint">"Hit space to start speaking"</div>
+                      ) : null
+                    )
+                }
                 className="message-list"
                 >
                 {messages.map((msg, i) => (
