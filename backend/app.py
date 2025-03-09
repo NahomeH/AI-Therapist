@@ -47,14 +47,14 @@ def generate_and_play_audio(text):
             voice=voice,
             audio_config=text2speech_audio_config
         )
-        
+        return response.audio_content
         audio_data = np.frombuffer(response.audio_content, dtype=np.int16)
         sd.play(audio_data, samplerate=48000)
         sd.wait()  # Wait until audio finishes playing
         return None
     except Exception as e:
         print(f"Unexpected error in text-to-speech: {str(e)}")
-        return str(e)
+        return None
 
 @app.route('/api/chat', methods=['POST', 'OPTIONS'])
 def chat():
@@ -92,19 +92,18 @@ def chat():
     temp_db[session_id]["history"].append({"role": "assistant", "content": agent_response})
     logger.info(f"Response: {agent_response}")
 
-    if is_voice_mode:
-        error = generate_and_play_audio(agent_response)
-        if error:
-            return jsonify({
-                "message": agent_response,
-                "sessionId": session_id,
-                "error": error
-            })
-    
-    return jsonify({
+    response_data = {
         "message": agent_response,
         "sessionId": session_id
-    })
+    }
+
+    if is_voice_mode:
+        audio_content = generate_and_play_audio(agent_response)
+        if audio_content:
+            import base64
+            response_data["audioData"] = base64.b64encode(audio_content).decode("utf-8")
+    
+    return jsonify(response_data)
 
 @app.route('/api/newUser', methods=['POST'])
 def newUser():
