@@ -35,6 +35,28 @@ function ChatInterface() {
   // Add state for mode change warning modal
   const [showWarningModal, setShowWarningModal] = useState(false);
 
+  const playAudio = async (audioData) => {
+    try {
+      // Convert base64 to ArrayBuffer
+      const binaryString = window.atob(audioData);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Create and play audio
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
+      const source = audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+      source.start(0);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  };
+
   const handleSend = useCallback(async (text) => {
     if (!text.trim()) return;
 
@@ -67,6 +89,11 @@ function ChatInterface() {
       };
 
       setMessages([...newMessages, botMessage]);
+
+      if (isVoiceMode && data.audioData) {
+        playAudio(data.audioData);
+      }
+
     } catch (error) {
       console.error('Error:', error);
       const errorMessage = {
