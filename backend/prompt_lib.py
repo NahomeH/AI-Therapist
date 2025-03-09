@@ -65,6 +65,7 @@ def start_convo_prompt_v0(user_name, history):
     </Example 2>
 
     User History: {history[-1]}
+    Output:
     """
 
 def cbtprompt_v0():

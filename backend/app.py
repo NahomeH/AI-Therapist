@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
-from util import generate_response, tts_config, get_first_message
+from util import generate_response, tts_config, get_first_message, save_session
 import ast
 import prompt_lib as pl
 
@@ -167,6 +167,7 @@ def firstChat():
     if not db_user_info:
         return jsonify({"success": False, "error": "User not found"})
     user_info = db_user_info.data[0]
+    user_info['history_summary'] = ast.literal_eval(user_info['history_summary'])
     logger.info(f"User info: {user_info}")
     if user_info['history_summary']:
         custom_sys_prompt = pl.systemprompt_v1() + pl.inject_history(preferred_name, user_info['history_summary'])
@@ -201,7 +202,12 @@ def save():
         - success (bool): True if the save was successful, False otherwise
         - error (str): Error message if the save failed, empty string otherwise
     """
-    return jsonify({"success": True, "message": message})
+    try:
+        save_session(supabase_client, user_info['user_id'], user_info['history_summary'], temp_db[session_id]["history"])
+    except Exception as e:
+        logger.error(f"Error saving session: {e}")
+        return jsonify({"success": False, "error": str(e)})
+    return jsonify({"success": True})
 
 if __name__ == '__main__':
     app.run(host='localhost', debug=True, port=5000)
