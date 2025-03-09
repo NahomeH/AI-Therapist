@@ -87,6 +87,10 @@ def chat():
     is_voice_mode = data.get('isVoiceMode', False)
     logger.info(f"Received message: {user_message}. Session ID: {session_id}")
     
+    if session_id not in temp_db:
+        init_convo = [{"role": "assistant", "content": "Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?"}]
+        temp_db[session_id] = {"history": init_convo, "crisis_status": False}
+    
     temp_db[session_id]["history"].append({"role": "user", "content": user_message})
     agent_response = generate_response(session_id, chat_client, temp_db, custom_sys_prompt)
     temp_db[session_id]["history"].append({"role": "assistant", "content": agent_response})
@@ -98,6 +102,7 @@ def chat():
     }
 
     if is_voice_mode:
+        response_data["normalizedMessage"] = normalized_message
         audio_content = generate_and_play_audio(agent_response)
         if audio_content:
             import base64

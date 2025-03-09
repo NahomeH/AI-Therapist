@@ -12,6 +12,31 @@ MIN_CONVO_LEN = 10
 LONG_CONTEXT_LEN = 20
 SHORT_CONTEXT_LEN = 3
 
+def normalize_text(text, chat_client):
+    """
+    Use OpenAI to normalize and add proper punctuation to the text.
+    """
+    try:
+        response = chat_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a text normalizer. Your task is to add proper punctuation, "
+                              "fix capitalization, and correct common speech-to-text artifacts. "
+                              "Maintain the exact meaning but make it read naturally. "
+                              "Return ONLY the corrected text with no explanations."
+                },
+                {"role": "user", "content": text}
+            ],
+            temperature=0.0  # Keep it consistent
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logger.error(f"Error normalizing text: {str(e)}")
+        return text  # Return original text if normalization fails
+
+
 def tts_config():
     text2speech_audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.LINEAR16,
