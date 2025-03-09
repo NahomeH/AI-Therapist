@@ -78,6 +78,8 @@ def chat():
         - sessionId (str): Session identifier
     """
     global custom_sys_prompt
+    global temp_db
+    global user_info
 
     data = request.json
     session_id = data.get('sessionId', 'default')
@@ -157,6 +159,8 @@ def firstChat():
         - message (str): AI's response
     """
     global custom_sys_prompt
+    global temp_db
+    global user_info
 
     session_id = request.json.get('sessionId')
     user_id = request.json.get('userId')
@@ -195,17 +199,22 @@ def save():
     """
     Saves session to Supabase DB.
     
-    This endpoint does not require any input data.
+    Expects JSON payload with:
+        - sessionId (str): Unique identifier for the session (currently the same as userId)
         
     Returns:
         JSON containing:
         - success (bool): True if the save was successful, False otherwise
         - error (str): Error message if the save failed, empty string otherwise
     """
+    global temp_db
+    global user_info
+
+    session_id = request.json.get('sessionId')
     try:
-        save_session(supabase_client, user_info['user_id'], user_info['history_summary'], temp_db[session_id]["history"])
+        save_session(supabase_client, chat_client, user_info['user_id'], user_info['history_summary'], temp_db[session_id]["history"])
     except Exception as e:
-        logger.error(f"Error saving session: {e}")
+        logger.exception(f"Error saving session: {e}")
         return jsonify({"success": False, "error": str(e)})
     return jsonify({"success": True})
 

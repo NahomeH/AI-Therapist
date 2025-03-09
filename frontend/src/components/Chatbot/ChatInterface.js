@@ -230,7 +230,9 @@ function ChatInterface() {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({})
+      body: JSON.stringify({
+        sessionId: user?.id || 'default'
+      })
     });
     const data = await response.json();
     console.log('Save chat response:', data);

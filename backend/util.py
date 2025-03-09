@@ -101,19 +101,16 @@ def get_first_message(chat_client, user_name, sys_prompt, history):
     logger.info(f"First message: {first_message}")
     return first_message  
 
-def save_session(supabase_client, user_id, past_history, chat_history):
+def save_session(supabase_client, chat_client, user_id, past_history, chat_history):
     logger.info(f"Saving session for user_id: {user_id}, past_history: {past_history}, chat_history: {chat_history}")
     summary = get_response(chat_client, pl.summary_prompt_v0(chat_history), [])
     logger.info(f"Summary: {summary}")
-    try:
-        supabase_client.table("users").insert({
-            "user_id": user_id,
-            "full_conversation": chat_history,
-            "summary": summary
-        }).execute()
-        supabase_client.table("users").update({
-            "history_summary": str([*past_history, summary])
-        }).eq("user_id", user_id).execute()
-    except Exception as e:
-        logger.error(f"Error adding user: {e}")
-        return jsonify({"success": False, "error": str(e)})   
+    supabase_client.table("sessions").insert({
+        "user_id": user_id,
+        "full_conversation": chat_history,
+        "summary": summary
+    }).execute()
+    supabase_client.table("users").update({
+        "history_summary": str([*past_history, summary])
+    }).eq("user_id", user_id).execute()
+    return
