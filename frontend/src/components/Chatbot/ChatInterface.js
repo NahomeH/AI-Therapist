@@ -327,7 +327,7 @@ function ChatInterface() {
                       <TypingIndicator content="Jennifer is thinking..." /> 
                     ) : (
                       isVoiceMode && !isPlaying && !isRecording ? (
-                        <div className="voice-space-hint">"Hit space to start speaking"</div>
+                        <div className="voice-space-hint">Press space to start speaking</div>
                       ) : null
                     )
                 }
