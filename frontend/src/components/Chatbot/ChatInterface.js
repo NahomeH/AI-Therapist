@@ -120,14 +120,15 @@ function ChatInterface() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true;
         recognition.interimResults = false;
         recognition.lang = 'en-US';
 
+        let transcript = '';
+
         recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          handleSend(transcript);
-          setIsRecording(false);
+          const newText = event.results[event.resultIndex][0].transcript;
+          transcript += newText;
         };
 
         recognition.onerror = (event) => {
@@ -136,6 +137,10 @@ function ChatInterface() {
         };
 
         recognition.onend = () => {
+          if (transcript.trim()) {
+            handleSend(transcript);
+            transcript = '';
+          }
           setIsRecording(false);
         };
 
@@ -245,6 +250,8 @@ function ChatInterface() {
                     ) : (
                       isVoiceMode && !isPlaying && !isRecording ? (
                         <div className="voice-space-hint">Press space to start speaking</div>
+                      ) : isVoiceMode && isRecording ? (
+                        <div className="voice-space-hint">Recording... Press space when done</div>
                       ) : null
                     )
                 }
