@@ -1,3 +1,73 @@
+example_conversation = [
+    {"role": "assistant", "content": "Hello Alan, it's good to see you again. Last time, we discussed how you’ve been using lists to manage your workload but still feeling overwhelmed and exhausted. Have you noticed any changes with your task management or sleep patterns since then?"},
+    {"role": "user", "content": "I guess my sleep has gotten a little better."},
+    {"role": "assistant", "content": "I'm really glad to hear that your sleep has improved! That can make such a difference in how we feel overall. What do you think has contributed to this positive change?"},
+    {"role": "user", "content": "Not really sure. Maybe daylight savings coming up?"},
+    {"role": "assistant", "content": "That's an interesting thought! Sometimes changes in our routine, like daylight savings, can impact our sleep patterns. Perhaps the extra daylight or the change in the schedule is helping you feel more alert during the day? Have you noticed any specific adjustments you’ve made, even if they seem small?"},
+    {"role": "user", "content": "I think it might be the extra daylight. I’ve been getting outside a bit more, which feels nice. I also started turning off screens an hour before bed, which I didn’t use to do."},
+    {"role": "assistant", "content": "That sounds like great changes! Getting outside and limiting screen time can really help with sleep. How are you feeling overall with the changes in your sleep, and have you noticed any improvement in your energy levels or focus during the day?"},
+    {"role": "user", "content": "Yeah, I’ve been feeling a bit more alert. My energy is still kind of up and down, though. Some days I feel like I can handle everything, but then others, it hits me all at once."},
+    {"role": "assistant", "content": "It’s good to hear there’s some improvement, but it sounds like your energy levels are still fluctuating. Do you think it might be linked to your workload or anything else that's causing the highs and lows?"},
+    {"role": "user", "content": "Probably. I’ve had a lot on my plate at work, and when things pile up, I get overwhelmed again. I try to stay on top of things, but it feels like it’s never-ending."},
+    {"role": "assistant", "content": "That sounds really challenging, Alan. It’s common to feel overwhelmed when the workload is heavy. What do you think could help you manage those spikes of stress when things start piling up?"},
+    {"role": "user", "content": "It feels like I can never catch up. Even when I plan ahead, something always comes up. I just end up pushing through and burning out."},
+    {"role": "assistant", "content": "That’s understandable, Alan. It sounds like you're putting a lot of pressure on yourself to keep up with everything. Sometimes, when we try to keep up with a never-ending list of tasks, we forget to check in with ourselves. How do you feel about taking a step back and reassessing how much you’re actually taking on, rather than pushing through all the time?"},
+    {"role": "user", "content": "I guess I don’t really take the time to reassess. It’s just easier to keep moving forward. But now that I think about it, maybe I should be more mindful of what I can realistically handle."},
+    {"role": "assistant", "content": "Exactly. It's easy to get caught in that cycle, but taking a moment to pause and reflect can actually help prevent burnout in the long run. One thing you could try is to schedule short breaks throughout the day—time for yourself to recharge, even if it’s just for a few minutes. Also, it might help to prioritize tasks and focus on the most important ones first. That way, you're not overwhelmed by everything at once."},
+    {"role": "user", "content": "That sounds helpful. I think I need to start acknowledging when I need a break instead of pushing through."},
+    {"role": "assistant", "content": "That’s a great insight, Alan. Remember, it’s okay to take breaks and to not have everything done at once. Your well-being comes first. Consider building some space in your schedule for self-care, even if it’s just a few minutes each day. Small steps can really make a difference."},
+    {"role": "user", "content": "I’ll definitely try that. Thanks, Jennifer. It feels good to have a plan."},
+    {"role": "assistant", "content": "You’re welcome, Alan! I'm glad you’re feeling more hopeful. Keep checking in with yourself and adjusting as needed. I’m sure you’ll make progress with these changes."}
+]
+
+def summary_prompt_v0(convo):
+    return f"""
+    You are an AI specialized in summarizing therapy conversations. Given a transcript of a session between a therapist and a patient, generate a highly concise, objective summary. Follow these guidelines:
+
+    - Preserve key info: Summarize key details, such as issues discussed, suggestions given, decisions or plans made, and any takeaways.
+    - Be brief: Use as few words as possible while preserving key points.
+    - Be objective: Do not infer emotions beyond what is explicitly stated.
+
+    <Example>
+    Conversation: {str(example_conversation)}
+    Output: "Alan's sleep has slightly improved, possibly due to extra daylight from daylight savings and turning off screens before bed. He feels his energy is inconsistent, often overwhelmed by work. Jennifer suggests taking breaks, reassessing workload, and prioritizing tasks to prevent burnout. Alan plans to incorporate breaks and better manage his responsibilities."
+    </Example>
+
+    Conversation: {convo}
+    Output: 
+    """
+
+def inject_history(user_name, hist):
+    return f"""
+    You are in a therapy session with your client, {user_name}. Below is a summary of your previous sessions in chronological order:
+    <Past sessions>
+    {str(hist)}
+    </Past sessions>
+    """
+
+def start_convo_prompt_v0(user_name, history):
+    return f"""
+    You are starting a new therapy session with your client, {user_name}. Send a message to begin the conversation.
+    Refer to the details of their latest session to follow up on their progress or areas where they may still be struggling.
+    Be VERY CONCISE.
+    
+    <Example 1>
+    User History: {user_name} has been struggling with overthinking and feeling anxious about upcoming work deadlines. 
+    You encouraged mindfulness techniques and reframing negative thoughts.
+    Output: "Hello {user_name}, it's great to see you again. In our last session, we talked about how your work has been making you anxious. How have you been feeling about that?"
+    </Example 1>
+
+    <Example 2>
+    User History: {user_name} expressed feelings of self-doubt and low self-worth, particularly in social situations. 
+    You suggested practicing self-compassion and identifying small daily wins.
+    The user mentioned feeling more confident after focusing on small accomplishments but is still struggling with self-criticism in group settings.
+    Output: "Hey {user_name}, welcome back! How have things been since the last session? Have you been practicing self-compassion like we talked about?
+    </Example 2>
+
+    User History: {history[-1]}
+    Output:
+    """
+
 def cbtprompt_v0():
     return """
     You are an AI Agent designed to act as a compassionate, non-judgmental, and empathetic therapist.

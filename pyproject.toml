@@ -23,6 +23,7 @@ pynput = "^1.7.7"
 sounddevice = "^0.5.1"
 google-cloud-texttospeech = "^2.25.0"
 numpy = "^2.2.3"
+supabase = "^2.13.0"
 
 
 [build-system]

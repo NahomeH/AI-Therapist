@@ -25,21 +25,24 @@ To run the agent, you'll need an OpenAI API key.
 
 - Create a .env file in the root directory
 
-  In this .env file, add your OpenAI API key:
+  In this .env file, add your OpenAI API key, as well as our Supabase environment variables:
   ```
   OPENAI_API_KEY=xxxxx
+  SUPABASE_URL=https://trrdexwjqyxrnznydglv.supabase.co
+  SUPABASE_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRycmRleHdqcXl4cm56bnlkZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMjgyMzMsImV4cCI6MjA1NTYwNDIzM30.oumkAp8lkQmCsT-lQ-WWqf33TKY6zMOwa2LtcgmqAEY
   ```
+  (We've privated this project in the meantime to prevent this key from being exposed to the public.)
+  
   Replace `xxxxx` with your actual API key.
 
 - Create another .env file in the `frontend` directory
 
-  In this .env file, add our Supabase environment variables:
+  In this .env file, add our Supabase environment variables again (**please make note of the different naming**):
 
   ```
   REACT_APP_SUPABASE_URL=https://trrdexwjqyxrnznydglv.supabase.co
   REACT_APP_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRycmRleHdqcXl4cm56bnlkZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMjgyMzMsImV4cCI6MjA1NTYwNDIzM30.oumkAp8lkQmCsT-lQ-WWqf33TKY6zMOwa2LtcgmqAEY
   ```
-  (We've privated this project in the meantime to prevent this key from being exposed to the public.)
 
 ### c. Authorize with Google Cloud API
 - [Install](https://cloud.google.com/sdk/docs/install) the gcloud CLI

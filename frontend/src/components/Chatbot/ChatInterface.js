@@ -17,15 +17,13 @@ import {
   ConversationHeader,
   Avatar
 } from "@chatscope/chat-ui-kit-react";
-import { ArrowLeft, Mic, Keyboard } from "lucide-react";
+import { ArrowLeft, Mic, Keyboard, Save } from "lucide-react";
 import "./ChatInterface.css";
 
 function ChatInterface() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   console.log("Current user:", {user});
-  const [messages, setMessages] = useState([
-    { message: "Hi! I'm Jennifer, Talk2Me's 24/7 AI therapist. What would you like to talk about?", sender: "bot" },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [hasSelectedMode, setHasSelectedMode] = useState(false);
@@ -35,6 +33,9 @@ function ChatInterface() {
   const [recognition, setRecognition] = useState(null);
   // Add state for mode change warning modal
   const [showWarningModal, setShowWarningModal] = useState(false);
+  // Add state for save chat modal
+  const [showSaveChatModal, setShowSaveChatModal] = useState(false);
+  const [saveChatStatus, setSaveChatStatus] = useState('initial'); // 'initial', 'saving', 'saved'
 
   const playAudio = async (audioData) => {
     try {
@@ -83,7 +84,8 @@ function ChatInterface() {
         },
         body: JSON.stringify({
           message: text,
-          sessionId: 'default',
+          sessionId: user?.id || 'default',
+          userId: user?.id || 'anonymous',
           isVoiceMode: isVoiceMode
         })
       });
@@ -196,13 +198,57 @@ function ChatInterface() {
   }, [isVoiceMode, toggleRecording]); // Add toggleRecording as a dependency
 
   // Initialize chat after mode selection
-  const initializeChat = (mode) => {
+  const initializeChat = async (mode) => {
     setIsVoiceMode(mode);
     setHasSelectedMode(true);
-    setMessages([{ 
+    setIsTyping(true);
+    try {
+      // Call the firstChat API to get the initial message
+      const response = await fetch('http://127.0.0.1:5000/api/firstChat', {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: user?.id || 'default',
+          userId: user?.id || 'anonymous',
+          userName: user?.user_metadata?.preferred_name || 'there'
+        })
+      });
+
+      console.log('First chat response:', response);
+      const data = await response.json();
+      
+      if (data.success) {
+        let welcomeMessage = data.message;
+        // Add mode-specific instructions
+        if (mode) {
+          welcomeMessage += ' Press space to start speaking.';
+        }
+        
+        setMessages([{ 
+          message: welcomeMessage, 
+          sender: "bot" 
+        }]);
+      } else {
+        // Fallback message if API call fails
+        setMessages([{ 
+          message: `Hi, I'm Jennifer! ${mode ? 'Press space to start speaking.' : 'What\'s on your mind?'}`, 
+          sender: "bot" 
+        }]);
+      }
+    } catch (error) {
+      console.error('Error initializing chat:', error);
+      // Fallback message if API call fails
+      setMessages([{ 
         message: `Hi, I'm Jennifer! ${mode ? 'Press space to start speaking.' : 'What\'s on your mind?'}`, 
         sender: "bot" 
-    }]);
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
   
   // Show warning modal when back button is clicked
@@ -224,6 +270,37 @@ function ChatInterface() {
   // Cancel mode change
   const cancelModeChange = () => {
     setShowWarningModal(false);
+  };
+
+  // Handle save chat button click
+  const handleSaveChatClick = () => {
+    setShowSaveChatModal(true);
+    setSaveChatStatus('initial');
+  };
+
+  // Saving chat
+  const saveChat = async () => {
+    setSaveChatStatus('saving');
+    const response = await fetch('http://127.0.0.1:5000/api/save', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sessionId: user?.id || 'default'
+      })
+    });
+    const data = await response.json();
+    console.log('Save chat response:', data);
+    setSaveChatStatus('saved');
+  };
+
+  // Handle end session
+  const handleEndSession = () => {
+    signOut();
+    setShowSaveChatModal(false);
   };
 
   return (
@@ -261,6 +338,12 @@ function ChatInterface() {
                 <ChatContainer>
                 <ConversationHeader>
                     <ConversationHeader.Content userName="Jennifer" />
+                    <ConversationHeader.Actions>
+                      <button onClick={handleSaveChatClick} className="save-chat-button">
+                        <Save size={16} />
+                        Save Chat
+                      </button>
+                    </ConversationHeader.Actions>
                 </ConversationHeader>
                 <MessageList 
                 typingIndicator={
@@ -334,6 +417,48 @@ function ChatInterface() {
                 Change Mode
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Save Chat Modal */}
+      {showSaveChatModal && (
+        <div className="modal-overlay">
+          <div className="warning-modal save-chat-modal">
+            {saveChatStatus === 'initial' && (
+              <>
+                <div className="warning-icon">💾</div>
+                <h3>Save Chat</h3>
+                <p>Would you like to save this chat to memory?</p>
+                <div className="modal-buttons">
+                  <button className="modal-button cancel" onClick={() => setShowSaveChatModal(false)}>
+                    Cancel
+                  </button>
+                  <button className="modal-button confirm" onClick={saveChat}>
+                    Save Chat
+                  </button>
+                </div>
+              </>
+            )}
+            
+            {saveChatStatus === 'saving' && (
+              <>
+                <div className="saving-spinner"></div>
+                <h3>Saving chat to memory...</h3>
+              </>
+            )}
+            
+            {saveChatStatus === 'saved' && (
+              <>
+                <div className="success-icon">✅</div>
+                <h3>Chat saved successfully!</h3>
+                <div className="modal-buttons single-button">
+                  <button className="modal-button end-session" onClick={handleEndSession}>
+                    End Session
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
