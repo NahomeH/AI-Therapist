@@ -114,7 +114,7 @@ function ChatInterface() {
     } finally {
       setIsTyping(false);
     }
-  }, [messages, isVoiceMode]);
+  }, [messages, isVoiceMode, user?.id]);
 
   // Update the useEffect for speech recognition to include handleSend
   useEffect(() => {
