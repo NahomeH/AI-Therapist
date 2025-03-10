@@ -120,7 +120,6 @@ def chat():
     }
 
     if is_voice_mode:
-        response_data["normalizedMessage"] = normalized_message
         audio_content = generate_audio(agent_response)
         if audio_content:
             import base64
