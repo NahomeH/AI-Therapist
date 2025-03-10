@@ -138,12 +138,31 @@ function ChatInterface() {
           setIsRecording(false);
         };
 
-        recognition.onend = () => {
-          if (transcript.trim()) {
-            handleSend(transcript);
-            transcript = '';
-          }
-          setIsRecording(false);
+        recognition.onend = async () => {
+            if (transcript.trim()) {
+              // Add punctuation to transcribed text
+              try {
+                const response = await fetch('http://127.0.0.1:5000/api/normalize-text', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ text: transcript }),
+                });
+                
+                const data = await response.json();
+                if (data.normalizedText) {
+                  handleSend(data.normalizedText);
+                } else {
+                  handleSend(transcript);
+                }
+                transcript = '';
+              } catch (error) {
+                console.error('Error normalizing text:', error);
+                handleSend(transcript);
+              }
+            }
+            setIsRecording(false);
         };
 
         setRecognition(recognition);

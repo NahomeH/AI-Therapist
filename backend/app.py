@@ -1,9 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-import sounddevice as sd
-from supabase import create_client
-import numpy as np
 from openai import OpenAI
 from dotenv import load_dotenv
 from google.cloud import texttospeech
@@ -31,9 +28,9 @@ temp_db = {}
 user_info = {}
 custom_sys_prompt = None
 
-def generate_and_play_audio(text):
+def generate_audio(text):
     """
-    Generate speech from text using Google Cloud TTS and play it.
+    Generate speech from text using Google Cloud TTS and returns it.
     
     Args:
         text (str): Text to convert to speech
@@ -48,15 +45,36 @@ def generate_and_play_audio(text):
             audio_config=text2speech_audio_config
         )
         return response.audio_content
-        audio_data = np.frombuffer(response.audio_content, dtype=np.int16)
-        sd.play(audio_data, samplerate=48000)
-        sd.wait()  # Wait until audio finishes playing
-        return None
     except Exception as e:
         print(f"Unexpected error in text-to-speech: {str(e)}")
         return None
 
-@app.route('/api/chat', methods=['POST', 'OPTIONS'])
+@app.route('/api/normalize-text', methods=['POST'])
+def add_punctuation_text():
+    """
+    Normalize text from speech-to-text by adding punctuation and proper formatting.
+    
+    Expects JSON payload with:
+        - text (str): Text to normalize
+        
+    Returns:
+        JSON containing:
+        - normalizedText (str): Normalized text
+    """
+    try:
+        data = request.json
+        text = data.get('text')
+        if not text:
+            return jsonify({'error': 'No text provided'}), 400
+            
+        normalized = normalize_text(text, chat_client)
+        return jsonify({'normalizedText': normalized})
+    except Exception as e:
+        logger.error(f"Error normalizing text: {str(e)}")
+        return jsonify({'error': 'Failed to normalize text'}), 500
+
+
+@app.route('/api/chat', methods=['POST'])
 def chat():
     if request.method == 'OPTIONS':
         response = jsonify({})
@@ -103,7 +121,7 @@ def chat():
 
     if is_voice_mode:
         response_data["normalizedMessage"] = normalized_message
-        audio_content = generate_and_play_audio(agent_response)
+        audio_content = generate_audio(agent_response)
         if audio_content:
             import base64
             response_data["audioData"] = base64.b64encode(audio_content).decode("utf-8")
