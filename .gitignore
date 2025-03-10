@@ -178,3 +178,6 @@ cython_debug/
 
 # windsurf rules
 .windsurfrules
+
+# misc
+.DS_Store
