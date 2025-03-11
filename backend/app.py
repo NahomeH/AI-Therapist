@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
-from util import generate_response, tts_config, get_first_message, save_session
+from util import generate_response, tts_config, get_first_message, save_session, normalize_text
 import ast
 import prompt_lib as pl
 
