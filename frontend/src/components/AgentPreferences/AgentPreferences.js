@@ -23,7 +23,7 @@ function AgentPreferences() {
       if (!user) return;
       
       try {
-        // Here you would fetch the user's preferences from your backend
+        // Here we fetch the user's preferences from the backend
         // For now, we'll use localStorage as a placeholder
         const savedInfo = localStorage.getItem('therapistInfo');
         const savedPreferences = localStorage.getItem('therapyPreferences');
@@ -46,7 +46,7 @@ function AgentPreferences() {
     setSaveStatus('');
     
     try {
-      // Here you would save the preferences to your backend
+      // Here we save the preferences to the backend
       // For now, we'll use localStorage as a placeholder
       localStorage.setItem('therapistInfo', therapistInfo);
       localStorage.setItem('therapyPreferences', therapyPreferences);

@@ -235,7 +235,7 @@ function ChatInterface() {
       } else {
         // Fallback message if API call fails
         setMessages([{ 
-          message: `Hi, I'm Jennifer! ${mode ? 'Press space to start speaking.' : 'What\'s on your mind?'}`, 
+          message: `Apologies, I'm having trouble connecting to the server. Please try again later.`, 
           sender: "bot" 
         }]);
       }
@@ -243,7 +243,7 @@ function ChatInterface() {
       console.error('Error initializing chat:', error);
       // Fallback message if API call fails
       setMessages([{ 
-        message: `Hi, I'm Jennifer! ${mode ? 'Press space to start speaking.' : 'What\'s on your mind?'}`, 
+        message: `Apologies, I'm having trouble connecting to the server. Please try again later.`, 
         sender: "bot" 
       }]);
     } finally {
