@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import Layout from './Layout';
 import ChatInterface from './components/Chatbot/ChatInterface'; 
 import AuthContainer from './components/Authentication/AuthContainer';
+import AgentPreferences from './components/AgentPreferences/AgentPreferences';
 
 function App() {
   return (
@@ -18,6 +19,10 @@ function App() {
           <Route element={<ProtectedRoute> <Layout /> </ProtectedRoute>}>
             <Route path="/chat" element={
                 <ChatInterface />
+            } />
+            
+            <Route path="/preferences" element={
+                <AgentPreferences />
             } />
             
             {/* Add other routes as needed */}
