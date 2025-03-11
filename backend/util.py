@@ -33,11 +33,10 @@ def schedule_appointment(user_id, supabase_client):
             - suggestedTime (str): The ISO formatted string of the scheduled appointment time, or None if no appointment was scheduled.
     '''
     try:
-        # future_appointments = supabase_client.table("appointments").select("*")\
-        #         .eq("user_id", user_id)\
-        #         .gte("appointment_time", datetime.now().isoformat())\
-        #         .execute()
-        future_appointments = None
+        future_appointments = supabase_client.table("appointments").select("*")\
+                .eq("user_id", user_id)\
+                .gte("appointment_time", datetime.now().isoformat())\
+                .execute()
         if not future_appointments or not future_appointments.data:
             next_appointment = datetime.now() + timedelta(days=7)
             next_appointment = next_appointment.replace(minute = 0, second=0, microsecond=0)
@@ -49,18 +48,19 @@ def schedule_appointment(user_id, supabase_client):
             elif hour < 6:
                 next_appointment = next_appointment.replace(hour=8, minute=0)
             
-            # supabase_client.table("appointments").insert({
-            #     "user_id": user_id,
-            #     "appointment_time": next_appointment.isoformat(),
-            #     "created_at_time": datetime.now().isoformat()
-            # }).execute()
+            logger.info(f"user_id: {user_id}, appointment_time: {next_appointment.isoformat()}, created_at_time: {datetime.now().isoformat()}")
+
+            supabase_client.table("appointments").insert({
+                "user_id": user_id,
+                "appointment_time": next_appointment.isoformat(),
+                "created_at_time": datetime.now().isoformat()
+            }).execute()
 
             return True, next_appointment.isoformat()
     except Exception as e:
-        logger.error(f"Error querying supabase appointments table: {str(e)}")
-        return False, None
-
-
+        logger.error(f"Error querying/inserting into Supabase appointments table: {str(e)}")
+    
+    return False, None
 
 def normalize_text(text, chat_client):
     """

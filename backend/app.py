@@ -24,7 +24,8 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 chat_client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 tts_client = texttospeech.TextToSpeechClient()
-supabase_client = create_client(os.getenv('SUPABASE_URL'), os.getenv('SUPABASE_API_KEY'))
+supabase_client = create_client(os.getenv('SUPABASE_URL'), 
+                                os.getenv('SUPABASE_API_KEY'))
 
 # Store state objects in memory
 # TODO: replace with a database
