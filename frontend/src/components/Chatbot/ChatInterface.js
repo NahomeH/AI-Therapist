@@ -78,7 +78,6 @@ function ChatInterface() {
     setIsTyping(true);
 
     try {
-      // Get bot response
       const response = await fetch('http://127.0.0.1:5000/api/chat', {
         method: 'POST',
         mode: 'cors',
@@ -167,18 +166,18 @@ function ChatInterface() {
     }
   };
 
-  // Add the appointment banner component
   const AppointmentBanner = () => (
     <div className="appointment-banner">
       <div className="appointment-banner-content">
-        <Calendar size={20} />
+        <Calendar size={24} strokeWidth={2} />
         <span>
           Would you like to schedule our next session for{' '}
-          {format(new Date(suggestedAppointment), 'PPpp')}?
+          {format(new Date(suggestedAppointment), 'EEEE, MMMM d')} at{' '}
+          {format(new Date(suggestedAppointment), 'h:mm a')}?
         </span>
         <div className="appointment-banner-actions">
           <button onClick={() => setShowAppointmentBanner(false)} className="banner-button cancel">
-            Decline
+            Not Now
           </button>
           <button onClick={handleDownloadCalendar} className="banner-button accept">
             Add to Calendar
@@ -188,7 +187,6 @@ function ChatInterface() {
     </div>
   );
 
-  // Update the useEffect for speech recognition to include handleSend
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -240,7 +238,7 @@ function ChatInterface() {
         setRecognition(recognition);
       }
     }
-  }, [handleSend]); // Add handleSend as a dependency
+  }, [handleSend]);
 
   // Add toggle recording function
   const toggleRecording = useCallback(() => {
@@ -252,7 +250,7 @@ function ChatInterface() {
       recognition.start();
       setIsRecording(true);
     }
-  }, [recognition, isRecording]); // Add recognition and isRecording as dependencies
+  }, [recognition, isRecording]);
 
   // Update keyboard event handling to include toggleRecording
   useEffect(() => {
@@ -267,7 +265,7 @@ function ChatInterface() {
       window.addEventListener('keydown', handleKeyPress);
       return () => window.removeEventListener('keydown', handleKeyPress);
     }
-  }, [isVoiceMode, toggleRecording]); // Add toggleRecording as a dependency
+  }, [isVoiceMode, toggleRecording]);
 
   // Initialize chat after mode selection
   const initializeChat = async (mode) => {

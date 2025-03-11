@@ -25,6 +25,7 @@ google-cloud-texttospeech = "^2.25.0"
 numpy = "^2.2.3"
 supabase = "^2.13.0"
 ics = "^0.7.2"
+pytz = "^2025.1"
 
 
 [build-system]

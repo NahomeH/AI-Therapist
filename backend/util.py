@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import pytz
 import logging
 from logging_config import setup_logging
 from google.cloud import texttospeech
@@ -38,16 +39,15 @@ def schedule_appointment(user_id, supabase_client):
                 .gte("appointment_time", datetime.now().isoformat())\
                 .execute()
         if not future_appointments or not future_appointments.data:
-            next_appointment = datetime.now() + timedelta(days=7)
+            next_appointment = datetime.now(pytz.UTC) + timedelta(days=7)
             next_appointment = next_appointment.replace(minute = 0, second=0, microsecond=0)
             
             # Adjust time to be between 6am and 11pm
             hour = next_appointment.hour
-            if hour >= 23:
-                next_appointment = next_appointment.replace(hour=23, minute=0)
-            elif hour < 6:
-                next_appointment = next_appointment.replace(hour=8, minute=0)
-            
+            if hour >= 23 or hour < 6:
+                # Late night users (11 PM - 6 AM) likely prefer evening appointments
+                next_appointment = next_appointment.replace(hour=20)  # 8 PM
+
             logger.info(f"user_id: {user_id}, appointment_time: {next_appointment.isoformat()}, created_at_time: {datetime.now().isoformat()}")
 
             supabase_client.table("appointments").insert({

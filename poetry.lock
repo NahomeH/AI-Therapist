@@ -1970,6 +1970,18 @@ files = [
 six = ">=1.10.0"
 
 [[package]]
+name = "pytz"
+version = "2025.1"
+description = "World timezone definitions, modern and historical"
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "pytz-2025.1-py2.py3-none-any.whl", hash = "sha256:89dd22dca55b46eac6eda23b2d72721bf1bdfef212645d81513ef5d03038de57"},
+    {file = "pytz-2025.1.tar.gz", hash = "sha256:c2db42be2a2518b28e65f9207c4d05e6ff547d1efa4086469ef855e4ab70178e"},
+]
+
+[[package]]
 name = "realtime"
 version = "2.4.1"
 description = ""
@@ -2415,4 +2427,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "b29fd422574edd326309f6fd3e83e888ade327ff334175ccbe04e01090f786f7"
+content-hash = "a709e7626a7fc4d75ca466723c45ad4a3543430b3ec340776528c05c64081374"

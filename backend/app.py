@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import os
+import pytz
 from datetime import datetime, timedelta
 from supabase import create_client
 from ics import Calendar, Event
@@ -95,13 +96,16 @@ def generate_calendar():
         data = request.json
         appointment_time = data.get('appointmentTime')
         start_time = datetime.fromisoformat(appointment_time)
+        if start_time.tzinfo is None:
+            start_time = pytz.UTC.localize(start_time)
 
         c = Calendar()
         e = Event()
         e.name = "Therapy Session with Talk2Me"
         e.begin = start_time
-        e.end = start_time + timedelta(hours=1)
+        e.end = start_time + timedelta(minutes=30)
         e.description = f"Virtual therapy session with Talk2Me AI therapist"
+        e.created = datetime.now(pytz.UTC)
         
         c.events.add(e)
         calendar_content = str(c)
