@@ -199,6 +199,7 @@ function ChatInterface() {
 
   // Initialize chat after mode selection
   const initializeChat = async (mode) => {
+    setMessages([]);
     setIsVoiceMode(mode);
     setHasSelectedMode(true);
     setIsTyping(true);
@@ -214,24 +215,24 @@ function ChatInterface() {
         body: JSON.stringify({
           sessionId: user?.id || 'default',
           userId: user?.id || 'anonymous',
-          userName: user?.user_metadata?.preferred_name || 'there'
+          userName: user?.user_metadata?.preferred_name || 'there',
+          isVoiceMode: isVoiceMode
         })
       });
-
-      console.log('First chat response:', response);
       const data = await response.json();
+      console.log('First chat response data:', data);
       
       if (data.success) {
         let welcomeMessage = data.message;
-        // Add mode-specific instructions
-        if (mode) {
-          welcomeMessage += ' Press space to start speaking.';
-        }
-        
         setMessages([{ 
           message: welcomeMessage, 
-          sender: "bot" 
+          sender: "bot",
+          timestamp: new Date()
         }]);
+
+        if (isVoiceMode && data.audioData) {
+          playAudio(data.audioData);
+        }  
       } else {
         // Fallback message if API call fails
         setMessages([{ 

@@ -1,3 +1,4 @@
+import base64
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
@@ -6,12 +7,13 @@ from dotenv import load_dotenv
 from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
+from supabase import create_client
 from util import generate_response, tts_config, get_first_message, save_session, normalize_text
 import ast
 import prompt_lib as pl
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+CORS(app, supports_credentials=True)
 
 # Configure logging
 setup_logging()
@@ -122,7 +124,6 @@ def chat():
     if is_voice_mode:
         audio_content = generate_audio(agent_response)
         if audio_content:
-            import base64
             response_data["audioData"] = base64.b64encode(audio_content).decode("utf-8")
     
     return jsonify(response_data)
@@ -178,6 +179,7 @@ def firstChat():
     Returns:
         JSON containing:
         - message (str): AI's response
+        - audioData (str): Base64-encoded audio data for the response
     """
     global custom_sys_prompt
     global temp_db
@@ -186,7 +188,8 @@ def firstChat():
     session_id = request.json.get('sessionId')
     user_id = request.json.get('userId')
     preferred_name = request.json.get('userName')
-    logger.info(f"Session ID: {session_id}, User ID: {user_id}, Preferred name: {preferred_name}")
+    is_voice_mode = request.json.get('isVoiceMode', False)
+    logger.info(f"Session ID: {session_id}, User ID: {user_id}, Preferred name: {preferred_name}, Is voice mode: {is_voice_mode}")
     
     db_user_info = supabase_client.table('users').select('*').eq('user_id', user_id).execute()
     if not db_user_info:
@@ -198,16 +201,27 @@ def firstChat():
         custom_sys_prompt = pl.systemprompt_v1() + pl.inject_history(preferred_name, user_info['history_summary'])
     else:
         custom_sys_prompt = pl.systemprompt_v1()
+
+    response_data = {
+        "success": True,
+        "sessionId": session_id
+    }
     
     try:
-        message = get_first_message(chat_client, preferred_name, custom_sys_prompt, user_info['history_summary'])
-        init_convo = [{"role": "assistant", "content": message}]
+        first_message = get_first_message(chat_client, preferred_name, custom_sys_prompt, user_info['history_summary'])
+        if is_voice_mode:
+            first_message = first_message + ' You can press space to start or stop speaking.'
+            audio_content = generate_audio(first_message)
+            if audio_content:
+                response_data["audioData"] = base64.b64encode(audio_content).decode("utf-8")
+        response_data["message"] = first_message
+        init_convo = [{"role": "assistant", "content": first_message}]
         temp_db[session_id] = {"history": init_convo, "crisis_status": False}
     except Exception as e:
         logger.error(f"Error retrieving first message: {e}")
         return jsonify({"success": False, "error": str(e)})
     
-    return jsonify({"success": True, "message": message})
+    return jsonify(response_data)
 
 @app.route('/api/save', methods=['POST', 'OPTIONS'])
 def save():
