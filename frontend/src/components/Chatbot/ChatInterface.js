@@ -28,6 +28,7 @@ function ChatInterface() {
   const [isRecording, setIsRecording] = useState(false);
   const [hasSelectedMode, setHasSelectedMode] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   // Add recognition state
   const [recognition, setRecognition] = useState(null);
   // Add state for mode change warning modal
@@ -35,6 +36,34 @@ function ChatInterface() {
   // Add state for save chat modal
   const [showSaveChatModal, setShowSaveChatModal] = useState(false);
   const [saveChatStatus, setSaveChatStatus] = useState('initial'); // 'initial', 'saving', 'saved'
+
+  const playAudio = async (audioData) => {
+    try {
+      // Convert base64 to ArrayBuffer
+      const binaryString = window.atob(audioData);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // Create and play audio
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuffer = await audioContext.decodeAudioData(bytes.buffer);
+      const source = audioContext.createBufferSource();
+
+      setIsPlaying(true);
+      source.onended = () => {
+        setIsPlaying(false);
+      }
+      source.buffer = audioBuffer;
+      source.connect(audioContext.destination);
+      source.start(0);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+      setIsPlaying(false);
+    }
+  };
 
   const handleSend = useCallback(async (text) => {
     if (!text.trim()) return;
@@ -69,6 +98,11 @@ function ChatInterface() {
       };
 
       setMessages([...newMessages, botMessage]);
+
+      if (isVoiceMode && data.audioData) {
+        playAudio(data.audioData);
+      }
+
     } catch (error) {
       console.error('Error:', error);
       const errorMessage = {
@@ -80,7 +114,7 @@ function ChatInterface() {
     } finally {
       setIsTyping(false);
     }
-  }, [messages, isVoiceMode]);
+  }, [messages, isVoiceMode, user?.id]);
 
   // Update the useEffect for speech recognition to include handleSend
   useEffect(() => {
@@ -88,14 +122,15 @@ function ChatInterface() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
-        recognition.continuous = false;
+        recognition.continuous = true;
         recognition.interimResults = false;
         recognition.lang = 'en-US';
 
+        let transcript = '';
+
         recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          handleSend(transcript);
-          setIsRecording(false);
+          const newText = event.results[event.resultIndex][0].transcript;
+          transcript += newText;
         };
 
         recognition.onerror = (event) => {
@@ -103,8 +138,31 @@ function ChatInterface() {
           setIsRecording(false);
         };
 
-        recognition.onend = () => {
-          setIsRecording(false);
+        recognition.onend = async () => {
+            if (transcript.trim()) {
+              // Add punctuation to transcribed text
+              try {
+                const response = await fetch('http://127.0.0.1:5000/api/normalize-text', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ text: transcript }),
+                });
+                
+                const data = await response.json();
+                if (data.normalizedText) {
+                  handleSend(data.normalizedText);
+                } else {
+                  handleSend(transcript);
+                }
+                transcript = '';
+              } catch (error) {
+                console.error('Error normalizing text:', error);
+                handleSend(transcript);
+              }
+            }
+            setIsRecording(false);
         };
 
         setRecognition(recognition);
@@ -288,7 +346,17 @@ function ChatInterface() {
                     </ConversationHeader.Actions>
                 </ConversationHeader>
                 <MessageList 
-                typingIndicator={isTyping ? <TypingIndicator content="Jennifer is thinking..." /> : null}
+                typingIndicator={
+                    isTyping ? (
+                      <TypingIndicator content="Jennifer is thinking..." /> 
+                    ) : (
+                      isVoiceMode && !isPlaying && !isRecording ? (
+                        <div className="voice-space-hint">Press space to start speaking</div>
+                      ) : isVoiceMode && isRecording ? (
+                        <div className="voice-space-hint">Recording... Press space when done</div>
+                      ) : null
+                    )
+                }
                 className="message-list"
                 >
                 {messages.map((msg, i) => (
