@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../Authentication/AuthContext";
+import { format } from 'date-fns';
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import {
   MainContainer,
@@ -17,7 +18,7 @@ import {
   ConversationHeader,
   Avatar
 } from "@chatscope/chat-ui-kit-react";
-import { ArrowLeft, Mic, Keyboard, Save } from "lucide-react";
+import { ArrowLeft, Mic, Keyboard, Save, Calendar } from "lucide-react";
 import "./ChatInterface.css";
 
 function ChatInterface() {
@@ -36,6 +37,9 @@ function ChatInterface() {
   // Add state for save chat modal
   const [showSaveChatModal, setShowSaveChatModal] = useState(false);
   const [saveChatStatus, setSaveChatStatus] = useState('initial'); // 'initial', 'saving', 'saved'
+  // Add state for appointments
+  const [showAppointmentBanner, setShowAppointmentBanner] = useState(false);
+  const [suggestedAppointment, setSuggestedAppointment] = useState(null);
 
   const playAudio = async (audioData) => {
     try {
@@ -91,6 +95,12 @@ function ChatInterface() {
       });
 
       const data = await response.json();
+      if (data.suggestedAppointment && data.suggestedTime) {
+        console.log("Frontend setting suggestedAppointmentBanner = True")
+        setSuggestedAppointment(data.suggestedTime)
+        setShowAppointmentBanner(true);
+      }
+
       const botMessage = {
         message: data.message,
         sender: "bot",
@@ -115,6 +125,68 @@ function ChatInterface() {
       setIsTyping(false);
     }
   }, [messages, isVoiceMode, user?.id]);
+
+  const handleDownloadCalendar = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/generate-calendar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          appointmentTime: suggestedAppointment,
+          userName: user?.user_metadata?.preferred_name || 'User'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate calendar file');
+      }
+
+      const blob = await response.blob();
+      
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'therapy_session.ics';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      const confirmMessage = {
+        message: `Perfect! I've generated a calendar invite for our next session on ${format(new Date(suggestedAppointment), 'PPpp')}. The event has been downloaded to your computer.`,
+        sender: "bot",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, confirmMessage]);
+      setShowAppointmentBanner(false);
+    } catch (error) {
+      console.error('Error downloading calendar:', error);
+      // Handle error...
+    }
+  };
+
+  // Add the appointment banner component
+  const AppointmentBanner = () => (
+    <div className="appointment-banner">
+      <div className="appointment-banner-content">
+        <Calendar size={20} />
+        <span>
+          Would you like to schedule our next session for{' '}
+          {format(new Date(suggestedAppointment), 'PPpp')}?
+        </span>
+        <div className="appointment-banner-actions">
+          <button onClick={() => setShowAppointmentBanner(false)} className="banner-button cancel">
+            Decline
+          </button>
+          <button onClick={handleDownloadCalendar} className="banner-button accept">
+            Add to Calendar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   // Update the useEffect for speech recognition to include handleSend
   useEffect(() => {
@@ -420,6 +492,8 @@ function ChatInterface() {
           </div>
         </div>
       )}
+      {/* Appointment Banner */}
+      {showAppointmentBanner && <AppointmentBanner />}
       
       {/* Save Chat Modal */}
       {showSaveChatModal && (

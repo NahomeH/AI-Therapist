@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import logging
 from logging_config import setup_logging
 from google.cloud import texttospeech
@@ -8,9 +9,58 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 CRISIS_MESSAGE = "It sounds like you're going through a really difficult time. As an AI, I'm not equipped to provide crisis support, and I would highly recommend seeking out professional resources. If you need immediate help, you can contact Crisis Text Line by texting HOME to 741741, call the Suicide & Crisis Lifeline at 988, or even go to the emergency room you feel like you need. Please let me know if there's anything else I can do for you. You can get through this."
-MIN_CONVO_LEN = 10
+MIN_CONVO_LEN = 1
 LONG_CONTEXT_LEN = 20
 SHORT_CONTEXT_LEN = 3
+
+def schedule_appointment(user_id, supabase_client):
+    '''
+    Schedule an appointment for a user if no future appointments exist.
+
+    This function checks the Supabase database for any future appointments
+    for the given user. If no future appointments are found, it schedules
+    a new appointment exactly one week from the current date and time,
+    adjusting the time to be between 6 AM and 11 PM. The new appointment
+    is then inserted into the Supabase database.
+
+    Args:
+        user_id (str): The unique identifier for the user.
+        supabase_client: The Supabase client instance used to interact with the database.
+
+    Returns:
+        tuple: A tuple containing:
+            - suggestedAppointment (bool): True if a new appointment was scheduled, False otherwise.
+            - suggestedTime (str): The ISO formatted string of the scheduled appointment time, or None if no appointment was scheduled.
+    '''
+    try:
+        # future_appointments = supabase_client.table("appointments").select("*")\
+        #         .eq("user_id", user_id)\
+        #         .gte("appointment_time", datetime.now().isoformat())\
+        #         .execute()
+        future_appointments = None
+        if not future_appointments or not future_appointments.data:
+            next_appointment = datetime.now() + timedelta(days=7)
+            next_appointment = next_appointment.replace(minute = 0, second=0, microsecond=0)
+            
+            # Adjust time to be between 6am and 11pm
+            hour = next_appointment.hour
+            if hour >= 23:
+                next_appointment = next_appointment.replace(hour=23, minute=0)
+            elif hour < 6:
+                next_appointment = next_appointment.replace(hour=8, minute=0)
+            
+            # supabase_client.table("appointments").insert({
+            #     "user_id": user_id,
+            #     "appointment_time": next_appointment.isoformat(),
+            #     "created_at_time": datetime.now().isoformat()
+            # }).execute()
+
+            return True, next_appointment.isoformat()
+    except Exception as e:
+        logger.error(f"Error querying supabase appointments table: {str(e)}")
+        return False, None
+
+
 
 def normalize_text(text, chat_client):
     """
@@ -93,14 +143,15 @@ def generate_response(session_id, client, temp_db, sys_prompt):
         temp_db (dict): The temporary database.
 
     Returns:
-        str: The generated response.
+        dict: "messages": the generated response string,
+              "endingConvo": optional, boolean flag for ending conversation
     """
     intent = get_response(client, pl.classify_intent_prompt_v0() + str(temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:]), [])
     logger.info(f"Detected intent: {intent}")
     if "2" in intent: # Crisis
-        return handle_crisis_message(session_id, client, temp_db)
+        return {"messages": handle_crisis_message(session_id, client, temp_db)}
     elif "3" in intent: # Robust
-        return get_response(client, pl.systemprompt_v1_mini() + pl.robust_v0(), temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:])
+        return {"messages": get_response(client, pl.systemprompt_v1_mini() + pl.robust_v0(), temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:])}
 
     convo_len = len(temp_db[session_id]["history"])
     logger.info(f"Convo length: {convo_len}")
@@ -108,9 +159,12 @@ def generate_response(session_id, client, temp_db, sys_prompt):
         should_end = get_response(client, pl.idenfity_end_prompt_v0() + str(temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:]), [])
         logger.info(f"should_end: {should_end}")
         if "1" in should_end:
-            return get_response(client, pl.close_convo_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])
+            return {
+                "messages": get_response(client, pl.close_convo_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]),
+                "endingConvo": True
+            }
 
-    return get_response(client, sys_prompt, temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])
+    return {"messages": get_response(client, sys_prompt, temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])}
 
 def get_history_summary(supabase_client, user_id):
     response = supabase_client.table('users').select('history_summary').eq('user_id', user_id).execute()

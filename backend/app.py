@@ -1,13 +1,16 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 import os
+from datetime import datetime, timedelta
 from supabase import create_client
+from ics import Calendar, Event
 from openai import OpenAI
 from dotenv import load_dotenv
 from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
-from util import generate_response, tts_config, get_first_message, save_session, normalize_text
+from util import generate_response, tts_config, get_first_message, save_session, \
+normalize_text, schedule_appointment
 import ast
 import prompt_lib as pl
 
@@ -75,6 +78,42 @@ def add_punctuation_text():
         return jsonify({'error': 'Failed to normalize text'}), 500
 
 
+@app.route('/api/generate-calendar', methods=['POST'])
+def generate_calendar():
+    """
+    Generate an ICS file for a therapy appointment
+    
+    Expects JSON payload with:
+        - appointmentTime (str): ISO 8601 formatted appointment time
+        - userName (str): User's name for the event
+    
+    Returns:
+        ICS file for download
+    """
+    try:
+        data = request.json
+        appointment_time = data.get('appointmentTime')
+        start_time = datetime.fromisoformat(appointment_time)
+
+        c = Calendar()
+        e = Event()
+        e.name = "Therapy Session with Talk2Me"
+        e.begin = start_time
+        e.end = start_time + timedelta(hours=1)
+        e.description = f"Virtual therapy session with Talk2Me AI therapist"
+        
+        c.events.add(e)
+        calendar_content = str(c)
+        
+        response = make_response(calendar_content)
+        response.headers["Content-Disposition"] = "attachment; filename=therapy_session.ics"
+        response.headers["Content-Type"] = "text/calendar"
+        return response
+
+    except Exception as e:
+        logger.error(f"Error generating calendar file: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/chat', methods=['POST', 'OPTIONS'])
 def chat():
     if request.method == 'OPTIONS':
@@ -102,19 +141,27 @@ def chat():
 
     data = request.json
     session_id = data.get('sessionId', 'default')
+    user_id = data.get('userId', 'default')
     user_message = data.get('message')
     is_voice_mode = data.get('isVoiceMode', False)
     logger.info(f"Received message: {user_message}. Session ID: {session_id}")
     
     temp_db[session_id]["history"].append({"role": "user", "content": user_message})
-    agent_response = generate_response(session_id, chat_client, temp_db, custom_sys_prompt)
+    agent_response_dict = generate_response(session_id, chat_client, temp_db, custom_sys_prompt)
+    agent_response = agent_response_dict["messages"]
     temp_db[session_id]["history"].append({"role": "assistant", "content": agent_response})
     logger.info(f"Response: {agent_response}")
 
     response_data = {
         "message": agent_response,
-        "sessionId": session_id
+        "sessionId": session_id,
     }
+    if agent_response_dict.get("endingConvo", False): 
+        suggestedAppointment, suggestedTime = schedule_appointment(user_id, supabase_client)
+        if suggestedAppointment:
+            response_data['suggestedAppointment'] = suggestedAppointment
+            response_data['suggestedTime'] = suggestedTime
+            logger.info(f"Scheduling appointment time: {response_data['suggestedTime']}")    
 
     if is_voice_mode:
         audio_content = generate_audio(agent_response)
