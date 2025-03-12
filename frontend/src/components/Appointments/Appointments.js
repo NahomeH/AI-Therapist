@@ -15,7 +15,7 @@ function Appointments() {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:5000/api/appointments`, {
+        const response = await fetch(`http://127.0.0.1:5000/api/get-appointments`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

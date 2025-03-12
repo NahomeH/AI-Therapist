@@ -76,25 +76,26 @@ function ChatInterface() {
     const newMessages = [...messages, newMessage];
     setMessages(newMessages);
     setIsTyping(true);
+    
+    // Get bot response
+    const response = await fetch('http://127.0.0.1:5000/api/chat', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: text,
+        sessionId: user?.id || 'default',
+        userId: user?.id || 'anonymous',
+        isVoiceMode: isVoiceMode
+      })
+    });
+    const data = await response.json();
+    console.log('Chat response data:', data);
 
-    try {
-      // Get bot response
-      const response = await fetch('http://127.0.0.1:5000/api/chat', {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: text,
-          sessionId: user?.id || 'default',
-          userId: user?.id || 'anonymous',
-          isVoiceMode: isVoiceMode
-        })
-      });
-
-      const data = await response.json();
+    if (data.success) {
       if (data.suggestedAppointment && data.suggestedTime) {
         console.log("Frontend setting suggestedAppointmentBanner = True")
         setSuggestedAppointment(data.suggestedTime)

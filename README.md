@@ -85,7 +85,7 @@ Our app allows you to talk to our agent via either speech or text.
 
 In your terminal, navigate to the project root directory and run the following command to start the Flask server:
 ```bash
-poetry run python backend/app.py
+poetry run python -m backend.run
 ```
 ## 2. Start the UI
 

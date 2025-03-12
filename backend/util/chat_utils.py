@@ -4,6 +4,7 @@ from flask import jsonify, current_app
 import logging
 import backend.prompt_lib as pl
 from .voice_utils import generate_audio
+from .appt_utils import suggest_appointment
 
 logger = logging.getLogger(__name__)
 
@@ -100,14 +101,15 @@ def generate_response(session_id, temp_db, sys_prompt):
 
     Returns:
         str: The generated response.
+        bool: True if the conversation should end, False otherwise.
     """
     session_history_str = str(temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:])
-    intent = get_response(pl.classify_intent_prompt_v0() + session_history_str, [])
+    intent = get_response(pl.classify_intent_prompt_v0(), [{"role": "user", "content": session_history_str}])
     logger.info(f"Detected intent: {intent}")
     if "2" in intent: # Crisis
-        return handle_crisis_message(session_id, temp_db)
+        return handle_crisis_message(session_id, temp_db), False
     elif "3" in intent: # Robust
-        return get_response(pl.systemprompt_v1_mini() + pl.robust_v0(), temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:])
+        return get_response(pl.systemprompt_v1_mini() + pl.robust_v0(), temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:]), False
 
     convo_len = len(temp_db[session_id]["history"])
     logger.info(f"Convo length: {convo_len}")
@@ -115,9 +117,9 @@ def generate_response(session_id, temp_db, sys_prompt):
         should_end = get_response(pl.idenfity_end_prompt_v0() + session_history_str, [])
         logger.info(f"should_end: {should_end}")
         if "1" in should_end:
-            return get_response(pl.close_convo_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])
+            return get_response(pl.close_convo_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]), True
 
-    return get_response(sys_prompt, temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])
+    return get_response(sys_prompt, temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]), False
 
 
 def handle_chat(data):
@@ -130,7 +132,7 @@ def handle_chat(data):
         return jsonify({"success": False, "error": "Session not found"})
     current_app.temp_db[session_id]["history"].append({"role": "user", "content": user_message})
     try:
-        agent_response = generate_response(session_id, current_app.temp_db, current_app.custom_sys_prompt)
+        agent_response, end_flag = generate_response(session_id, current_app.temp_db, current_app.custom_sys_prompt)
     except Exception as e:
         logger.error(f"Error generating response: {e}")
         return jsonify({"success": False, "error": str(e)})
@@ -142,6 +144,14 @@ def handle_chat(data):
         "message": agent_response,
         "sessionId": session_id
     }
+
+    if end_flag: 
+        suggestedAppointment, suggestedTime = suggest_appointment(current_app.user_info['user_id'])
+        if suggestedAppointment:
+            response_data['suggestedAppointment'] = suggestedAppointment
+            response_data['suggestedTime'] = suggestedTime
+            logger.info(f"Scheduling appointment time: {response_data['suggestedTime']}")
+
     if is_voice_mode:
         audio_content = generate_audio(agent_response)
         if audio_content:

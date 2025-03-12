@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 from .util.db_utils import handle_new_user, handle_save_session
 from .util.chat_utils import handle_first_chat, handle_chat, handle_add_punctuation
+from .util.appt_utils import handle_get_appointments, handle_generate_calendar, handle_save_appointment
 import logging
 
 api_blueprint = Blueprint('api', __name__)
@@ -100,3 +101,50 @@ def save():
     logger.info(f"Saving session for session ID {session_id}")
     return handle_save_session(session_id)
 
+
+@api_blueprint.route('/api/generate-calendar', methods=['POST'])
+def generate_calendar():
+    """
+    Generate an ICS file for a therapy appointment
+    
+    Expects JSON payload with:
+        - appointmentTime (str): ISO 8601 formatted appointment time
+        - userName (str): User's name for the event
+    
+    Returns:
+        ICS file for download
+    """
+    data = request.json
+    return handle_generate_calendar(data)
+    
+
+@api_blueprint.route('/api/save-appointment', methods=['POST'])
+def save_appointment():
+    """
+    Save an accepted appointment to the database.
+    
+    Expects JSON payload with:
+        - userId (str): User ID
+        - appointmentTime (str): ISO formatted appointment time
+    """
+    data = request.json
+    return handle_save_appointment(data)
+
+
+@api_blueprint.route('/api/get-appointments', methods=['POST'])
+def get_appointments():
+    """
+    Retrieve upcoming appointments for a user.
+    
+    Expects JSON payload with:
+        - userId (str): Unique identifier for the user
+        
+    Returns:
+        JSON containing:
+        - success (bool): True if successful
+        - appointments (list): List of appointment objects
+        - error (str): Error message if any
+    """
+    user_id = request.json.get('userId')
+    return handle_get_appointments(user_id)
+    
