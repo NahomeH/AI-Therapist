@@ -6,7 +6,6 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../Authentication/AuthContext";
-// import { format } from 'date-fns';
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import {
   MainContainer,
