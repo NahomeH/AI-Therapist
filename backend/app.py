@@ -11,7 +11,7 @@ from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
 from util import generate_response, tts_config, get_first_message, save_session, \
-normalize_text, schedule_appointment
+normalize_text, schedule_appointment, PACIFIC_TZ
 import ast
 import prompt_lib as pl
 
@@ -97,7 +97,7 @@ def generate_calendar():
         appointment_time = data.get('appointmentTime')
         start_time = datetime.fromisoformat(appointment_time)
         if start_time.tzinfo is None:
-            start_time = pytz.UTC.localize(start_time)
+            start_time = PACIFIC_TZ.localize(start_time)
 
         c = Calendar()
         e = Event()

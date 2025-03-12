@@ -13,6 +13,7 @@ CRISIS_MESSAGE = "It sounds like you're going through a really difficult time. A
 MIN_CONVO_LEN = 1
 LONG_CONTEXT_LEN = 20
 SHORT_CONTEXT_LEN = 3
+PACIFIC_TZ = pytz.timezone('America/Los_Angeles')
 
 def schedule_appointment(user_id, supabase_client):
     '''
@@ -39,7 +40,10 @@ def schedule_appointment(user_id, supabase_client):
                 .gte("appointment_time", datetime.now().isoformat())\
                 .execute()
         if not future_appointments or not future_appointments.data:
-            next_appointment = datetime.now(pytz.UTC) + timedelta(days=7)
+            current_time = datetime.now(pytz.UTC)
+            local_time = current_time.astimezone(PACIFIC_TZ)
+
+            next_appointment = local_time + timedelta(days=7)
             next_appointment = next_appointment.replace(minute = 0, second=0, microsecond=0)
             
             # Adjust time to be between 6am and 11pm
@@ -47,16 +51,20 @@ def schedule_appointment(user_id, supabase_client):
             if hour >= 23 or hour < 6:
                 # Late night users (11 PM - 6 AM) likely prefer evening appointments
                 next_appointment = next_appointment.replace(hour=20)  # 8 PM
+            
+            utc_appointment = next_appointment.astimezone(pytz.UTC)
 
-            logger.info(f"user_id: {user_id}, appointment_time: {next_appointment.isoformat()}, created_at_time: {datetime.now().isoformat()}")
+            logger.info(f"user_id: {user_id}, local_appointment_time: {next_appointment.isoformat()}, utc_appointment_time: {utc_appointment.isoformat()}")
 
             supabase_client.table("appointments").insert({
                 "user_id": user_id,
-                "appointment_time": next_appointment.isoformat(),
-                "created_at_time": datetime.now().isoformat()
+                "appointment_time": utc_appointment.isoformat(),
+                "created_at_time": datetime.now(pytz.UTC).isoformat()
             }).execute()
 
             return True, next_appointment.isoformat()
+        else:
+            logger.info(f"User {user_id} already has an appointment time  ")
     except Exception as e:
         logger.error(f"Error querying/inserting into Supabase appointments table: {str(e)}")
     
