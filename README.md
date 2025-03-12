@@ -25,11 +25,12 @@ To run the agent, you'll need an OpenAI API key.
 
 - Create a .env file in the root directory
 
-  In this .env file, add your OpenAI API key, as well as our Supabase environment variables:
+  In this .env file, add your OpenAI API key, our Supabase environment variables and Google Cloud service account key env variable:
   ```
   OPENAI_API_KEY=xxxxx
   SUPABASE_URL=https://trrdexwjqyxrnznydglv.supabase.co
   SUPABASE_API_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRycmRleHdqcXl4cm56bnlkZ2x2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAwMjgyMzMsImV4cCI6MjA1NTYwNDIzM30.oumkAp8lkQmCsT-lQ-WWqf33TKY6zMOwa2LtcgmqAEY
+  GOOGLE_APPLICATION_CREDENTIALS=talk2me-451917-c7fe6547aa36.json
   ```
   (We've privated this project in the meantime to prevent this key from being exposed to the public.)
   
@@ -45,13 +46,19 @@ To run the agent, you'll need an OpenAI API key.
   ```
 
 ### c. Authorize with Google Cloud API
-- [Install](https://cloud.google.com/sdk/docs/install) the gcloud CLI
-
-- Set up local authroization credentials for your account and set up project ID (talk2me-451917):
+- Activate service account for Talk2Me project
   ```
-  gcloud init
-  
-  gcloud auth application-default login
+  gcloud auth activate-service-account --key-file=talk2me-451917-c7fe6547aa36.json
+  ```
+- [Optional] Check the service account is active
+  ```
+  gcloud auth list
+  ```
+  You should see
+  ```
+    Credentialed Accounts
+    ACTIVE  ACCOUNT
+    *       talk2me@talk2me-451917.iam.gserviceaccount.com
   ```
   
 ## 3. Install Backend Dependencies

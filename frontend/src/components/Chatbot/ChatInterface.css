@@ -617,31 +617,36 @@ body {
 }
 
 .appointment-banner-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
 }
-
+  
 .banner-button {
-  padding: 6px 12px;
-  border-radius: 4px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background-color 0.2s;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
 }
-
+  
 .banner-button.cancel {
-  background: #f3f4f6;
-  color: #4b5563;
+    background-color: #f3f4f6;
+    color: #374151;
 }
-
+  
 .banner-button.accept {
-  background: #2563eb;
-  color: white;
+    background-color: #10b981;
+    color: white;
 }
-
+  
+.banner-button.calendar {
+    background-color: #3b82f6;
+    color: white;
+}
+  
 .banner-button:hover {
-  opacity: 0.9;
+    opacity: 0.9;
 }
 
 @keyframes slide-up {

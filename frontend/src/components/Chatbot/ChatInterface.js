@@ -121,6 +121,40 @@ function ChatInterface() {
     setIsTyping(false);
   }, [messages, isVoiceMode, user?.id]);
 
+  const handleSaveAppointment = async () => {
+    try {
+      const saveResponse = await fetch('http://127.0.0.1:5000/api/save-appointment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+          appointmentTime: suggestedAppointment
+        })
+      });
+
+      if (!saveResponse.ok) {
+        throw new Error('Failed to save appointment');
+      }
+
+      const confirmMessage = {
+        message: `Great! I've scheduled our next session for ${formatInTimeZone(
+          new Date(suggestedAppointment), 
+          'America/Los_Angeles',
+          'PPpp zzz'
+        )}.`,
+        sender: "bot",
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, confirmMessage]);
+      setShowAppointmentBanner(false);
+    } catch (error) {
+      console.error('Error saving appointment:', error);
+      // Handle error...
+    }
+  };
+
   const handleDownloadCalendar = async () => {
     try {
         const saveResponse = await fetch('http://127.0.0.1:5000/api/save-appointment', {
@@ -202,8 +236,11 @@ function ChatInterface() {
           <button onClick={() => setShowAppointmentBanner(false)} className="banner-button cancel">
             Not Now
           </button>
-          <button onClick={handleDownloadCalendar} className="banner-button accept">
-            Add to Calendar
+          <button onClick={handleSaveAppointment} className="banner-button accept">
+            Confirm Session
+          </button>
+          <button onClick={handleDownloadCalendar} className="banner-button calendar">
+            Confirm & Download to Calendar
           </button>
         </div>
       </div>
