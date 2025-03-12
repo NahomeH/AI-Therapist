@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../Authentication/AuthContext";
-import { format } from 'date-fns';
+// import { format } from 'date-fns';
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import {
   MainContainer,
@@ -19,6 +19,7 @@ import {
   Avatar
 } from "@chatscope/chat-ui-kit-react";
 import { ArrowLeft, Mic, Keyboard, Save, Calendar } from "lucide-react";
+import { formatInTimeZone } from 'date-fns-tz';
 import "./ChatInterface.css";
 
 function ChatInterface() {
@@ -154,7 +155,11 @@ function ChatInterface() {
       document.body.removeChild(a);
 
       const confirmMessage = {
-        message: `Perfect! I've generated a calendar invite for our next session on ${format(new Date(suggestedAppointment), 'PPpp')}. The event has been downloaded to your computer.`,
+        message: `Perfect! I've generated a calendar invite for our next session on ${formatInTimeZone(
+            new Date(suggestedAppointment), 
+            'America/Los_Angeles',
+            'PPpp zzz'
+        )}. The event has been downloaded to your computer.`,
         sender: "bot",
         timestamp: new Date()
       };
@@ -172,8 +177,16 @@ function ChatInterface() {
         <Calendar size={24} strokeWidth={2} />
         <span>
           Would you like to schedule our next session for{' '}
-          {format(new Date(suggestedAppointment), 'EEEE, MMMM d')} at{' '}
-          {format(new Date(suggestedAppointment), 'h:mm a')}?
+          {formatInTimeZone(
+            new Date(suggestedAppointment), 
+            'America/Los_Angeles',
+            'EEEE, MMMM d'
+          )} at{' '}
+          {formatInTimeZone(
+            new Date(suggestedAppointment), 
+            'America/Los_Angeles',
+            'h:mm a'
+          )} Pacific Time?
         </span>
         <div className="appointment-banner-actions">
           <button onClick={() => setShowAppointmentBanner(false)} className="banner-button cancel">
