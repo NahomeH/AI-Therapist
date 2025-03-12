@@ -1,6 +1,6 @@
 // components/Layout/SideBar.js
 import React from 'react';
-import { User, MessageSquare, Calendar, LayoutDashboardIcon, LogOut, Menu, ChevronLeft, Settings } from 'lucide-react';
+import { User, MessageSquare, Calendar, LayoutDashboardIcon, LogOut, Menu, ChevronLeft, CalendarPlus, Settings } from 'lucide-react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../Authentication/AuthContext';
 import './SideBar.css';
@@ -41,11 +41,18 @@ function SideBar({ collapsed, onToggle }) {
           <span>Chat</span>
         </NavLink>
         
-        <NavLink to="/history" className={({ isActive }) => 
+        {/* <NavLink to="/history" className={({ isActive }) => 
           `sidebar-menu-item ${isActive ? 'sidebar-menu-item-active' : ''}`
         }>
           <Calendar size={20} />
           <span>Session History</span>
+        </NavLink> */}
+
+        <NavLink to="/appointments" className={({ isActive }) => 
+          `sidebar-menu-item ${isActive ? 'sidebar-menu-item-active' : ''}`
+        }>
+          <CalendarPlus size={20} />
+          <span>Appointments</span>
         </NavLink>
         
         <NavLink to="/preferences" className={({ isActive }) => 

@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import Layout from './Layout';
 import ChatInterface from './components/Chatbot/ChatInterface'; 
 import AuthContainer from './components/Authentication/AuthContainer';
+import Appointments from './components/Appointments/Appointments';
 import AgentPreferences from './components/AgentPreferences/AgentPreferences';
 
 function App() {
@@ -19,6 +20,10 @@ function App() {
           <Route element={<ProtectedRoute> <Layout /> </ProtectedRoute>}>
             <Route path="/chat" element={
                 <ChatInterface />
+            } />
+
+            <Route path="/appointments" element={
+                <Appointments />
             } />
             
             <Route path="/preferences" element={
