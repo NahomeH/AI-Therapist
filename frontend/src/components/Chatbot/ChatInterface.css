@@ -596,3 +596,61 @@ body {
             transform: translateY(0);
       }
 }
+
+.appointment-banner {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  z-index: 1000;
+  max-width: 400px;
+  animation: slide-up 0.3s ease-out;
+}
+
+.appointment-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.appointment-banner-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.banner-button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.banner-button.cancel {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.banner-button.accept {
+  background: #2563eb;
+  color: white;
+}
+
+.banner-button:hover {
+  opacity: 0.9;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}

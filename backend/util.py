@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+import pytz
 import logging
 from logging_config import setup_logging
 from google.cloud import texttospeech
@@ -11,6 +13,56 @@ CRISIS_MESSAGE = "It sounds like you're going through a really difficult time. A
 MIN_CONVO_LEN = 10
 LONG_CONTEXT_LEN = 20
 SHORT_CONTEXT_LEN = 3
+
+PACIFIC_TZ = pytz.timezone('America/Los_Angeles')
+
+def suggest_appointment(user_id, supabase_client):
+    '''
+    Suggest an appointment for a user if no future appointments exist.
+
+    This function checks the Supabase database for any future appointments
+    for the given user. If no future appointments are found, it schedules
+    a new appointment exactly one week from the current date and time (the same hour).
+    If the current time is between 6 AM and 11 PM, it would suggest a time at 8 PM.
+
+    Args:
+        user_id (str): The unique identifier for the user.
+        supabase_client: The Supabase client instance used to interact with the database.
+
+    Returns:
+        tuple: A tuple containing:
+            - suggestedAppointment (bool): True if a new appointment was suggested, False otherwise.
+            - suggestedTime (str): The ISO formatted string of the suggested appointment time, or None if no appointment was suggested.
+    '''
+    try:
+        future_appointments = supabase_client.table("appointments").select("*")\
+                .eq("user_id", user_id)\
+                .gte("appointment_time", datetime.now().isoformat())\
+                .execute()
+        if not future_appointments or not future_appointments.data:
+            current_time = datetime.now(pytz.UTC)
+            local_time = current_time.astimezone(PACIFIC_TZ)
+
+            next_appointment = local_time + timedelta(days=7)
+            next_appointment = next_appointment.replace(minute = 0, second=0, microsecond=0)
+            
+            # Adjust time to be between 6am and 11pm
+            hour = next_appointment.hour
+            if hour >= 23 or hour < 6:
+                # Late night users (11 PM - 6 AM) likely prefer evening appointments
+                next_appointment = next_appointment.replace(hour=20)  # 8 PM
+            
+            utc_appointment = next_appointment.astimezone(pytz.UTC)
+
+            logger.info(f"Suggesting to user_id: {user_id} for local_appointment_time: {next_appointment.isoformat()}, utc_appointment_time: {utc_appointment.isoformat()}")
+
+            return True, next_appointment.isoformat()
+        else:
+            logger.info(f"User {user_id} already has an appointment time  ")
+    except Exception as e:
+        logger.error(f"Error querying/inserting into Supabase appointments table: {str(e)}")
+    
+    return False, None
 
 def normalize_text(text, chat_client):
     """
@@ -93,14 +145,15 @@ def generate_response(session_id, client, temp_db, sys_prompt):
         temp_db (dict): The temporary database.
 
     Returns:
-        str: The generated response.
+        dict: "messages": the generated response string,
+              "endingConvo": optional, boolean flag for ending conversation
     """
     intent = get_response(client, pl.classify_intent_prompt_v0() + str(temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:]), [])
     logger.info(f"Detected intent: {intent}")
     if "2" in intent: # Crisis
-        return handle_crisis_message(session_id, client, temp_db)
+        return {"messages": handle_crisis_message(session_id, client, temp_db)}
     elif "3" in intent: # Robust
-        return get_response(client, pl.systemprompt_v1_mini() + pl.robust_v0(), temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:])
+        return {"messages": get_response(client, pl.systemprompt_v1_mini() + pl.robust_v0(), temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:])}
 
     convo_len = len(temp_db[session_id]["history"])
     logger.info(f"Convo length: {convo_len}")
@@ -108,9 +161,12 @@ def generate_response(session_id, client, temp_db, sys_prompt):
         should_end = get_response(client, pl.idenfity_end_prompt_v0() + str(temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:]), [])
         logger.info(f"should_end: {should_end}")
         if "1" in should_end:
-            return get_response(client, pl.close_convo_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])
+            return {
+                "messages": get_response(client, pl.close_convo_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]),
+                "endingConvo": True
+            }
 
-    return get_response(client, sys_prompt, temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])
+    return {"messages": get_response(client, sys_prompt, temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])}
 
 def get_history_summary(supabase_client, user_id):
     response = supabase_client.table('users').select('history_summary').eq('user_id', user_id).execute()
