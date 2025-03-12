@@ -72,48 +72,43 @@ function ChatInterface() {
     const newMessages = [...messages, newMessage];
     setMessages(newMessages);
     setIsTyping(true);
+    // Get bot response
+    const response = await fetch('http://127.0.0.1:5000/api/chat', {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: text,
+        sessionId: user?.id || 'default',
+        userId: user?.id || 'anonymous',
+        isVoiceMode: isVoiceMode
+      })
+    });
+    const data = await response.json();
+    console.log('Chat response data:', data);
 
-    try {
-      // Get bot response
-      const response = await fetch('http://127.0.0.1:5000/api/chat', {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: text,
-          sessionId: user?.id || 'default',
-          userId: user?.id || 'anonymous',
-          isVoiceMode: isVoiceMode
-        })
-      });
-
-      const data = await response.json();
+    if (data.success) {
       const botMessage = {
         message: data.message,
         sender: "bot",
         timestamp: new Date()
       };
-
       setMessages([...newMessages, botMessage]);
-
       if (isVoiceMode && data.audioData) {
         playAudio(data.audioData);
       }
-
-    } catch (error) {
-      console.error('Error:', error);
+    } else {
       const errorMessage = {
         message: "Sorry, I'm having trouble connecting to the server.",
         sender: "bot",
         timestamp: new Date()
       };
       setMessages([...newMessages, errorMessage]);
-    } finally {
-      setIsTyping(false);
-    }
+    } 
+    setIsTyping(false);
   }, [messages, isVoiceMode, user?.id]);
 
   // Update the useEffect for speech recognition to include handleSend
@@ -142,23 +137,24 @@ function ChatInterface() {
             if (transcript.trim()) {
               // Add punctuation to transcribed text
               try {
-                const response = await fetch('http://127.0.0.1:5000/api/normalize-text', {
+                const response = await fetch('http://127.0.0.1:5000/api/add-punct', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({ text: transcript }),
                 });
-                
                 const data = await response.json();
-                if (data.normalizedText) {
-                  handleSend(data.normalizedText);
+                console.log('Add punctuation response data:', data);
+
+                if (data.success) {
+                  handleSend(data.newText);
                 } else {
                   handleSend(transcript);
                 }
                 transcript = '';
               } catch (error) {
-                console.error('Error normalizing text:', error);
+                console.error('Error adding punctuation:', error);
                 handleSend(transcript);
               }
             }
@@ -216,7 +212,7 @@ function ChatInterface() {
           sessionId: user?.id || 'default',
           userId: user?.id || 'anonymous',
           userName: user?.user_metadata?.preferred_name || 'there',
-          isVoiceMode: isVoiceMode
+          isVoiceMode: mode
         })
       });
       const data = await response.json();
@@ -230,7 +226,7 @@ function ChatInterface() {
           timestamp: new Date()
         }]);
 
-        if (isVoiceMode && data.audioData) {
+        if (mode === true && data.audioData) {
           playAudio(data.audioData);
         }  
       } else {

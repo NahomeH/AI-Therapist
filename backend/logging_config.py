@@ -4,7 +4,7 @@ from datetime import datetime
 
 def setup_logging():
     """Configure logging to write to logs directory in project root"""
-    # Get the project root directory (parent of prototype)
+    # Get the project root directory (parent of backend)
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     log_dir = os.path.join(project_root, 'logs/app_backend')
     
@@ -23,4 +23,6 @@ def setup_logging():
         ]
     )
     
-    return logging.getLogger(__name__)
+    # Set third-party loggers to WARNING level to reduce noise
+    logging.getLogger('werkzeug').setLevel(logging.WARNING)
+    logging.getLogger('urllib3').setLevel(logging.WARNING)
