@@ -20,6 +20,12 @@ example_conversation = [
     {"role": "assistant", "content": "You’re welcome, Alan! I'm glad you’re feeling more hopeful. Keep checking in with yourself and adjusting as needed. I’m sure you’ll make progress with these changes."}
 ]
 
+def punctualize_prompt():
+    return """
+    You are a text normalizer. Your task is to add proper punctuation, fix capitalization, and correct common speech-to-text artifacts.
+    Maintain the exact meaning but make it read naturally. Return ONLY the corrected text with no explanations.
+    """
+
 def summary_prompt_v0(convo):
     return f"""
     You are an AI specialized in summarizing therapy conversations. Given a transcript of a session between a therapist and a patient, generate a highly concise, objective summary. Follow these guidelines:
