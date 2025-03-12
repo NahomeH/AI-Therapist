@@ -10,20 +10,20 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 CRISIS_MESSAGE = "It sounds like you're going through a really difficult time. As an AI, I'm not equipped to provide crisis support, and I would highly recommend seeking out professional resources. If you need immediate help, you can contact Crisis Text Line by texting HOME to 741741, call the Suicide & Crisis Lifeline at 988, or even go to the emergency room you feel like you need. Please let me know if there's anything else I can do for you. You can get through this."
-MIN_CONVO_LEN = 1
+MIN_CONVO_LEN = 10
 LONG_CONTEXT_LEN = 20
 SHORT_CONTEXT_LEN = 3
+
 PACIFIC_TZ = pytz.timezone('America/Los_Angeles')
 
-def schedule_appointment(user_id, supabase_client):
+def suggest_appointment(user_id, supabase_client):
     '''
-    Schedule an appointment for a user if no future appointments exist.
+    Suggest an appointment for a user if no future appointments exist.
 
     This function checks the Supabase database for any future appointments
     for the given user. If no future appointments are found, it schedules
-    a new appointment exactly one week from the current date and time,
-    adjusting the time to be between 6 AM and 11 PM. The new appointment
-    is then inserted into the Supabase database.
+    a new appointment exactly one week from the current date and time (the same hour).
+    If the current time is between 6 AM and 11 PM, it would suggest a time at 8 PM.
 
     Args:
         user_id (str): The unique identifier for the user.
@@ -31,8 +31,8 @@ def schedule_appointment(user_id, supabase_client):
 
     Returns:
         tuple: A tuple containing:
-            - suggestedAppointment (bool): True if a new appointment was scheduled, False otherwise.
-            - suggestedTime (str): The ISO formatted string of the scheduled appointment time, or None if no appointment was scheduled.
+            - suggestedAppointment (bool): True if a new appointment was suggested, False otherwise.
+            - suggestedTime (str): The ISO formatted string of the suggested appointment time, or None if no appointment was suggested.
     '''
     try:
         future_appointments = supabase_client.table("appointments").select("*")\
@@ -54,13 +54,7 @@ def schedule_appointment(user_id, supabase_client):
             
             utc_appointment = next_appointment.astimezone(pytz.UTC)
 
-            logger.info(f"user_id: {user_id}, local_appointment_time: {next_appointment.isoformat()}, utc_appointment_time: {utc_appointment.isoformat()}")
-
-            supabase_client.table("appointments").insert({
-                "user_id": user_id,
-                "appointment_time": utc_appointment.isoformat(),
-                "created_at_time": datetime.now(pytz.UTC).isoformat()
-            }).execute()
+            logger.info(f"Suggesting to user_id: {user_id} for local_appointment_time: {next_appointment.isoformat()}, utc_appointment_time: {utc_appointment.isoformat()}")
 
             return True, next_appointment.isoformat()
         else:

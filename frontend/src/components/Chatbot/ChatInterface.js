@@ -127,6 +127,21 @@ function ChatInterface() {
 
   const handleDownloadCalendar = async () => {
     try {
+        const saveResponse = await fetch('http://127.0.0.1:5000/api/save-appointment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                userId: user?.id,
+                appointmentTime: suggestedAppointment
+            })
+        });
+
+        if (!saveResponse.ok) {
+            throw new Error('Failed to save appointment');
+        }
+
       const response = await fetch('http://127.0.0.1:5000/api/generate-calendar', {
         method: 'POST',
         headers: {

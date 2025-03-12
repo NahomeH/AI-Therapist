@@ -11,7 +11,7 @@ from google.cloud import texttospeech
 import logging
 from logging_config import setup_logging
 from util import generate_response, tts_config, get_first_message, save_session, \
-normalize_text, schedule_appointment, PACIFIC_TZ
+normalize_text, suggest_appointment, PACIFIC_TZ
 import ast
 import prompt_lib as pl
 
@@ -162,7 +162,7 @@ def chat():
         "sessionId": session_id,
     }
     if agent_response_dict.get("endingConvo", False): 
-        suggestedAppointment, suggestedTime = schedule_appointment(user_id, supabase_client)
+        suggestedAppointment, suggestedTime = suggest_appointment(user_id, supabase_client)
         if suggestedAppointment:
             response_data['suggestedAppointment'] = suggestedAppointment
             response_data['suggestedTime'] = suggestedTime
@@ -175,6 +175,39 @@ def chat():
             response_data["audioData"] = base64.b64encode(audio_content).decode("utf-8")
     
     return jsonify(response_data)
+
+# Add new endpoint to save accepted appointments
+@app.route('/api/save-appointment', methods=['POST'])
+def save_appointment():
+    """
+    Save an accepted appointment to the database.
+    
+    Expects JSON payload with:
+        - userId (str): User ID
+        - appointmentTime (str): ISO formatted appointment time
+    """
+    try:
+        data = request.json
+        user_id = data.get('userId')
+        appointment_time = data.get('appointmentTime')
+        
+        if not user_id or not appointment_time:
+            return jsonify({'success': False, 'error': 'Missing required fields'}), 400
+
+        # Convert to UTC for storage
+        local_time = datetime.fromisoformat(appointment_time)
+        utc_time = local_time.astimezone(pytz.UTC)
+
+        supabase_client.table("appointments").insert({
+            "user_id": user_id,
+            "appointment_time": utc_time.isoformat(),
+            "created_at_time": datetime.now(pytz.UTC).isoformat()
+        }).execute()
+
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error(f"Error saving appointment: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/api/newUser', methods=['POST'])
 def newUser():
@@ -287,6 +320,47 @@ def save():
         logger.exception(f"Error saving session: {e}")
         return jsonify({"success": False, "error": str(e)})
     return jsonify({"success": True})
+
+@app.route('/api/appointments', methods=['POST'])
+def get_appointments():
+    """
+    Retrieve upcoming appointments for a user.
+    
+    Expects JSON payload with:
+        - userId (str): Unique identifier for the user
+        
+    Returns:
+        JSON containing:
+        - success (bool): True if successful
+        - appointments (list): List of appointment objects
+        - error (str): Error message if any
+    """
+    try:
+        user_id = request.json.get('userId')
+        if not user_id:
+            return jsonify({'success': False, 'error': 'User ID is required'}), 400
+
+        # Query future appointments from Supabase
+        response = supabase_client.table("appointments").select("*")\
+            .eq("user_id", user_id)\
+            .gte("appointment_time", datetime.now(pytz.UTC).isoformat())\
+            .order("appointment_time", desc=False)\
+            .execute()
+
+        appointments = response.data if response else []
+        
+        return jsonify({
+            'success': True,
+            'appointments': appointments
+        })
+
+    except Exception as e:
+        logger.error(f"Error retrieving appointments: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to retrieve appointments'
+        }), 500
+
 
 if __name__ == '__main__':
     app.run(host='localhost', debug=True, port=5000)
