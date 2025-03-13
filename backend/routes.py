@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, jsonify, request
 from .util.db_utils import handle_new_user, handle_save_session
 from .util.chat_utils import handle_first_chat, handle_chat, handle_add_punctuation
 from .util.appt_utils import handle_get_appointments, handle_generate_calendar, handle_save_appointment
@@ -132,7 +132,7 @@ def save_appointment():
     return handle_save_appointment(data)
 
 
-@api_blueprint.route('/api/get-appointments', methods=['POST'])
+@api_blueprint.route('/api/get-appointments', methods=['POST', 'OPTIONS'])
 def get_appointments():
     """
     Retrieve upcoming appointments for a user.
@@ -146,11 +146,19 @@ def get_appointments():
         - appointments (list): List of appointment objects
         - error (str): Error message if any
     """
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", "*")  # Allow all origins
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        return response, 200
     user_id = request.json.get('userId')
-    return handle_get_appointments(user_id)
+    response = handle_get_appointments(user_id)
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
     
 
-@api_blueprint.route('/api/get-prefs', methods=['POST'])
+@api_blueprint.route('/api/get-prefs', methods=['POST', 'OPTIONS'])
 def get_prefs():
     """
     Retrieve user preferences.
@@ -166,8 +174,16 @@ def get_prefs():
         - gender (str): Preferred agent gender, if any
         - error (str): Error message if any
     """
+    if request.method == 'OPTIONS':
+        response = jsonify({})
+        response.headers.add("Access-Control-Allow-Origin", "*")  # Allow all origins
+        response.headers.add("Access-Control-Allow-Methods", "POST, OPTIONS")
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        return response, 200
     user_id = request.json.get('userId')
-    return handle_get_prefs(user_id)
+    response = handle_get_prefs(user_id)
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    return response
     
 
 @api_blueprint.route('/api/set-prefs', methods=['POST'])
@@ -187,4 +203,5 @@ def set_prefs():
         - error (str): Error message if any
     """
     data = request.json
+
     return handle_set_prefs(data)

@@ -65,12 +65,15 @@ function AgentPreferences() {
       });
       const data = await response.json();
       console.log('Set preferences response:', data);
-      setSaveStatus('Preferences saved successfully!');
+      // Add a 1-second delay for realism
+      setTimeout(() => {
+        setSaveStatus('Preferences saved successfully!');
+        setIsSaving(false); // Move this inside the setTimeout callback
+      }, 1000);
     } catch (error) {
       console.error('Error saving preferences:', error);
       setSaveStatus('Failed to save preferences. Please try again.');
-    } finally {
-      setIsSaving(false);
+      setIsSaving(false); // Keep this here for the error case
     }
   };
 

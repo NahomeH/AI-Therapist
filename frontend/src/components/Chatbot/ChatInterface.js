@@ -20,6 +20,7 @@ import {
 import { ArrowLeft, Mic, Keyboard, Save, Calendar } from "lucide-react";
 import { formatInTimeZone } from 'date-fns-tz';
 import "./ChatInterface.css";
+import { v4 as uuidv4 } from 'uuid';
 
 function ChatInterface() {
   const { user, signOut } = useAuth();
@@ -40,6 +41,55 @@ function ChatInterface() {
   // Add state for appointments
   const [showAppointmentBanner, setShowAppointmentBanner] = useState(false);
   const [suggestedAppointment, setSuggestedAppointment] = useState(null);
+  // Add state for therapist information based on gender preference
+  const [therapistName, setTherapistName] = useState("Jennifer");
+  const [therapistIcon, setTherapistIcon] = useState("/woman-icon.png");
+  // Add state to track when we're initializing the chat
+  const [isInitializing, setIsInitializing] = useState(false);
+  // Generate a random session ID when component mounts
+  const [sessionId] = useState(() => uuidv4());
+
+  // Fetch user preferences when component mounts
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      if (user?.id) {
+        try {
+          const response = await fetch('http://127.0.0.1:5000/api/get-prefs', {
+            method: 'POST',
+            mode: 'cors',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              userId: user.id
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch user preferences');
+          }
+          
+          const data = await response.json();
+          console.log('User preferences:', data);
+          
+          if (data.success) {
+            // Set therapist name and icon based on gender preference
+            if (data.gender === 'MALE') {
+              setTherapistName('William');
+              setTherapistIcon('/man-icon.svg');
+            } else {
+              // Default to female therapist
+              setTherapistName('Jennifer');
+              setTherapistIcon('/woman-icon.png');
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching user preferences:', error);
+        }
+      }
+    };
+    fetchUserPreferences();
+  }, [user]);
 
   const playAudio = async (audioData) => {
     try {
@@ -87,7 +137,7 @@ function ChatInterface() {
       },
       body: JSON.stringify({
         message: text,
-        sessionId: user?.id || 'default',
+        sessionId: sessionId,
         userId: user?.id || 'anonymous',
         isVoiceMode: isVoiceMode
       })
@@ -119,7 +169,7 @@ function ChatInterface() {
       setMessages([...newMessages, errorMessage]);
     } 
     setIsTyping(false);
-  }, [messages, isVoiceMode, user?.id]);
+  }, [messages, isVoiceMode, user?.id, sessionId]);
 
   const handleSaveAppointment = async () => {
     try {
@@ -334,6 +384,7 @@ function ChatInterface() {
     setIsVoiceMode(mode);
     setHasSelectedMode(true);
     setIsTyping(true);
+    setIsInitializing(true);
     try {
       // Call the firstChat API to get the initial message
       const response = await fetch('http://127.0.0.1:5000/api/firstChat', {
@@ -344,7 +395,7 @@ function ChatInterface() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sessionId: user?.id || 'default',
+          sessionId: sessionId,
           userId: user?.id || 'anonymous',
           userName: user?.user_metadata?.preferred_name || 'there',
           isVoiceMode: mode
@@ -380,6 +431,7 @@ function ChatInterface() {
       }]);
     } finally {
       setIsTyping(false);
+      setIsInitializing(false);
     }
   };
   
@@ -421,7 +473,7 @@ function ChatInterface() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        sessionId: user?.id || 'default'
+        sessionId: sessionId
       })
     });
     const data = await response.json();
@@ -469,7 +521,7 @@ function ChatInterface() {
             <MainContainer>
                 <ChatContainer>
                 <ConversationHeader>
-                    <ConversationHeader.Content userName="Jennifer" />
+                    <ConversationHeader.Content userName={therapistName} />
                     <ConversationHeader.Actions>
                       <button onClick={handleSaveChatClick} className="save-chat-button">
                         <Save size={16} />
@@ -480,7 +532,11 @@ function ChatInterface() {
                 <MessageList 
                 typingIndicator={
                     isTyping ? (
-                      <TypingIndicator content="Jennifer is thinking..." /> 
+                      isInitializing ? (
+                        <TypingIndicator content={`Hi ${user?.user_metadata?.preferred_name || 'there'}! Please wait as I retrieve your information...`} />
+                      ) : (
+                        <TypingIndicator content={`Thank you for sharing. Let me think for a moment...`} />
+                      )
                     ) : (
                       isVoiceMode && !isPlaying && !isRecording ? (
                         <div className="voice-space-hint">Press space to start speaking</div>
@@ -504,9 +560,9 @@ function ChatInterface() {
                       avatarSpacer={msg.sender === "user"}
                     >
                     {msg.sender === "bot" && (
-                      <Avatar src="/robot-icon.png" name="Jennifer" />
+                      <Avatar src={therapistIcon} name={therapistName} />
                     )}
-                    <Message.Header sender={msg.sender === "bot" ? "Jennifer" : "You"} />
+                    <Message.Header sender={msg.sender === "bot" ? therapistName : "You"} />
                     </Message>
                     ))}
                 </MessageList>
