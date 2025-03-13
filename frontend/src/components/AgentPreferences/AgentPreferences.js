@@ -13,30 +13,34 @@ function AgentPreferences() {
   const { user } = useAuth();
   const [therapistInfo, setTherapistInfo] = useState('');
   const [therapyPreferences, setTherapyPreferences] = useState('');
-  const [therapistGender, setTherapistGender] = useState('female');
+  const [therapistGender, setTherapistGender] = useState('FEMALE');
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
 
   // Load saved preferences when component mounts
   useEffect(() => {
     const loadPreferences = async () => {
-      if (!user) return;
-      
       try {
-        // Here we fetch the user's preferences from the backend
-        // For now, we'll use localStorage as a placeholder
-        const savedInfo = localStorage.getItem('therapistInfo');
-        const savedPreferences = localStorage.getItem('therapyPreferences');
-        const savedGender = localStorage.getItem('therapistGender');
-        
-        if (savedInfo) setTherapistInfo(savedInfo);
-        if (savedPreferences) setTherapyPreferences(savedPreferences);
-        if (savedGender) setTherapistGender(savedGender);
+        const response = await fetch('http://127.0.0.1:5000/api/get-prefs', {
+          method: 'POST',
+          mode: 'cors',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user?.id || 'anonymous'
+          })
+        });
+        const data = await response.json();
+        console.log('Get preferences data:', data);
+        setTherapistInfo(data?.backgroundInfo || '');
+        setTherapyPreferences(data?.agentPreferences || '');
+        setTherapistGender(data.gender);
       } catch (error) {
         console.error('Error loading preferences:', error);
       }
     };
-    
     loadPreferences();
   }, [user]);
 
@@ -44,23 +48,32 @@ function AgentPreferences() {
     e.preventDefault();
     setIsSaving(true);
     setSaveStatus('');
-    
     try {
-      // Here we save the preferences to the backend
-      // For now, we'll use localStorage as a placeholder
-      localStorage.setItem('therapistInfo', therapistInfo);
-      localStorage.setItem('therapyPreferences', therapyPreferences);
-      localStorage.setItem('therapistGender', therapistGender);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSaveStatus('Preferences saved successfully!');
+      const response = await fetch('http://127.0.0.1:5000/api/set-prefs', {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user?.id || 'anonymous',
+          backgroundInfo: therapistInfo,
+          agentPreferences: therapyPreferences,
+          gender: therapistGender
+        })
+      });
+      const data = await response.json();
+      console.log('Set preferences response:', data);
+      // Add a 1-second delay for realism
+      setTimeout(() => {
+        setSaveStatus('Preferences saved successfully!');
+        setIsSaving(false); // Move this inside the setTimeout callback
+      }, 1000);
     } catch (error) {
       console.error('Error saving preferences:', error);
-      setSaveStatus('Error saving preferences. Please try again.');
-    } finally {
-      setIsSaving(false);
+      setSaveStatus('Failed to save preferences. Please try again.');
+      setIsSaving(false); // Keep this here for the error case
     }
   };
 
@@ -106,9 +119,9 @@ function AgentPreferences() {
                 type="radio"
                 id="male"
                 name="therapistGender"
-                value="male"
-                checked={therapistGender === 'male'}
-                onChange={() => setTherapistGender('male')}
+                value="MALE"
+                checked={therapistGender === 'MALE'}
+                onChange={() => setTherapistGender('MALE')}
               />
               <label htmlFor="male">Male</label>
             </div>
@@ -118,9 +131,9 @@ function AgentPreferences() {
                 type="radio"
                 id="female"
                 name="therapistGender"
-                value="female"
-                checked={therapistGender === 'female'}
-                onChange={() => setTherapistGender('female')}
+                value="FEMALE"
+                checked={therapistGender === 'FEMALE'}
+                onChange={() => setTherapistGender('FEMALE')}
               />
               <label htmlFor="female">Female</label>
             </div>

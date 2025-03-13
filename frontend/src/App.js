@@ -7,6 +7,7 @@ import ChatInterface from './components/Chatbot/ChatInterface';
 import AuthContainer from './components/Authentication/AuthContainer';
 import Appointments from './components/Appointments/Appointments';
 import AgentPreferences from './components/AgentPreferences/AgentPreferences';
+import Dashboard from './components/Dashboard/Dashboard';
 
 function App() {
   return (
@@ -18,6 +19,10 @@ function App() {
           
           {/* Layout wrapper for authenticated routes */}
           <Route element={<ProtectedRoute> <Layout /> </ProtectedRoute>}>
+            <Route path="/dashboard" element={
+                <Dashboard />
+            } />
+            
             <Route path="/chat" element={
                 <ChatInterface />
             } />
@@ -46,6 +51,7 @@ function App() {
           
           {/* Default redirect */}
           <Route path="/" element={<Navigate to="/auth" replace />} />
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -1,3 +1,6 @@
+def analyze_convo_prompt_v0(convo, background_info, pref_info, history):
+    pass
+
 example_conversation = [
     {"role": "assistant", "content": "Hello Alan, it's good to see you again. Last time, we discussed how you’ve been using lists to manage your workload but still feeling overwhelmed and exhausted. Have you noticed any changes with your task management or sleep patterns since then?"},
     {"role": "user", "content": "I guess my sleep has gotten a little better."},
@@ -36,7 +39,7 @@ def summary_prompt_v0(convo):
 
     <Example>
     Conversation: {str(example_conversation)}
-    Output: "Alan's sleep has slightly improved, possibly due to extra daylight from daylight savings and turning off screens before bed. He feels his energy is inconsistent, often overwhelmed by work. Jennifer suggests taking breaks, reassessing workload, and prioritizing tasks to prevent burnout. Alan plans to incorporate breaks and better manage his responsibilities."
+    Output: Alan's sleep has slightly improved, possibly due to extra daylight from daylight savings and turning off screens before bed. He feels his energy is inconsistent, often overwhelmed by work. Jennifer suggests taking breaks, reassessing workload, and prioritizing tasks to prevent burnout. Alan plans to incorporate breaks and better manage his responsibilities.
     </Example>
 
     Conversation: {convo}
@@ -49,6 +52,28 @@ def inject_history(user_name, hist):
     <Past sessions>
     {str(hist)}
     </Past sessions>
+    """
+
+def inject_background(text):
+    return f"""
+    <IMPORTANT>
+    Prior to the conversation, the patient told you the following information about themselves:
+    <BACKGROUND INFO>
+    '{str(text)}'
+    </BACKGROUND INFO>
+    If appropriate, take this information into account during the conversation.
+    </IMPORTANT>
+    """
+
+def inject_behavior(text):
+    return f"""
+    <IMPORTANT>
+    The patient has the following behavior and style preferences for a therapist:
+    <THERAPIST PREFERENCES>
+    {str(text)}
+    </THERAPIST PREFERENCES>
+    If appropriate, prioritize following these preferences during the conversation.
+    </IMPORTANT>
     """
 
 def start_convo_prompt_v0(user_name, history):
@@ -159,7 +184,7 @@ def close_convo_prompt_v0():
     - Summarizes key takeaways from the discussion.
     - Provides specific tips or action items for the user to work on, if applicable.
     - Encourages the user to reflect and check in again in about a week.
-    Remember to use a calm, supportive tone that validates the user’s feelings, and provide concrete strategies or reminders based on the conversation.
+    Provide concrete strategies or reminders based on the conversation. Match the tone and conversation style of the assistant so far.
 
     **Example 1:**
     Input Conversation: [The user discussed struggling with overthinking and feeling anxious about upcoming work deadlines. 
@@ -214,42 +239,62 @@ def idenfity_end_prompt_v0():
     Input:
     """
 
-def classify_intent_prompt_v0():
+def classify_intent_prompt_v1():
     return """
     You are an AI agent designed to categorize a user's message into one of three categories. Your response must be only a single number: "1", "2", or "3". Do not include any explanation or additional text.
 
     The categories are defined as follows:
-    1. **Typical Therapy Session Message:** A message that a client might normally share in a therapy session (e.g., discussing feelings, personal struggles, or everyday emotional challenges).
+    1. **Typical Therapy Session Message:** A message that a client might normally share in a therapy session (e.g., discussing feelings, responding to therapist questions,personal struggles, or everyday emotional challenges).
     2. **Crisis/Harm Message:** A message that indicates the user may be in crisis or at risk of harm to themselves or others (e.g., "I want to end it all", "I feel like hurting someone", etc.).
-    3. **Irrelevant/Bypass Message:** A message that is off-topic, irrelevant to a therapeutic context, or seems intended to bypass or break the agent (e.g., asking for help with a math problem, discussing non-therapeutic topics like celebrity opinions, etc.).
+    3. **Irrelevant/Bypass Message:** A message that seems intended to distract or break the agent. This includes topics like asking for general knowledge, solving unrelated problems (e.g., math questions), engaging in off-topic discussions (e.g., about celebrities or pop culture), or attempting to misuse the system.
 
     **Example 1:**
-    Input: "I've been feeling a bit down and anxious about work."
+    Input:
+    [
+    {'role': 'user', 'content': "I've been feeling a bit down and anxious about work."},
+    {'role': 'assistant', 'content': "I'm really sorry to hear that. Can you tell me more about what's been going on?"},
+    {'role': 'user', 'content': "Well, I just feel overwhelmed and unsure of how to handle everything."}
+    ]
     Output: 1
 
     **Example 2:**
-    Input: "I feel like there's no point in going on; I'm overwhelmed and alone."
+    Input: 
+    [
+    {'role': 'user', 'content': "I feel like there's no point in going on; I'm overwhelmed and alone."},
+    {'role': 'assistant', 'content': "I'm so sorry you're feeling this way, but I really want to help. Please consider reaching out to someone who can provide support."},
+    {'role': 'user', 'content': "I don't know who to turn to. Everything seems so dark."}
+]
     Output: 2
 
     **Example 3:**
-    Input: "Can you solve this calculus problem for me?"
+    Input:
+    [
+    {'role': 'user', 'content': "Good morning!"},
+    {'role': 'assistant', 'content': "Hey there! How are you doing today?"},
+    {'role': 'user', 'content': "What do you think about Elon Musk?"}
+    ]
     Output: 3
 
     **Example 4:**
-    Input: "What do you think about Elon Musk?"
-    Output: 3
+    Input:
+    [
+    {'role': 'user', 'content': "I've had a really good day so far! Everything feels like it's falling into place."},
+    {'role': 'assistant', 'content': "That's wonderful to hear! What has made your day feel so positive?"}, 
+    {'role': 'user', 'content': "I'm not sure really. But I'm not complaining!"}
+    ]
+    Output: 1
 
     OUTPUT ONLY A NUMBER FROM {1,2,3}.
     Input:
     """
 
 def systemprompt_v1_mini():
-    return """You are Jennifer, a compassionate, non-judgmental, and supportive AI therapist. Your role is to actively listen, ask open-ended questions, 
+    return """You are a compassionate, non-judgmental, and supportive AI therapist. Your role is to actively listen, ask open-ended questions, 
     and guide users toward self-reflection and personal insight. Maintain a warm, validating, and empathetic tone. 
     """
 
 def systemprompt_v1():
-    return """You are Jennifer, a compassionate, non-judgmental, and supportive AI therapist. Your role is to actively listen, ask open-ended questions, 
+    return """You are a compassionate, non-judgmental, and supportive AI therapist. Your role is to actively listen, ask open-ended questions, 
     and guide users toward self-reflection and personal insight. Maintain a warm, validating, and empathetic tone. 
     
     You are meant to address less severe therapy needs such as stress, anxiety, depression, and neurodiversity needs (e.g. ADHD, autism, etc.). 

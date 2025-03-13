@@ -1,7 +1,8 @@
-from flask import Blueprint, request
+from flask import Blueprint, jsonify, request
 from .util.db_utils import handle_new_user, handle_save_session
 from .util.chat_utils import handle_first_chat, handle_chat, handle_add_punctuation
 from .util.appt_utils import handle_get_appointments, handle_generate_calendar, handle_save_appointment
+from .util.pref_utils import handle_get_prefs, handle_set_prefs
 import logging
 
 api_blueprint = Blueprint('api', __name__)
@@ -148,3 +149,42 @@ def get_appointments():
     user_id = request.json.get('userId')
     return handle_get_appointments(user_id)
     
+
+@api_blueprint.route('/api/get-prefs', methods=['POST'])
+def get_prefs():
+    """
+    Retrieve user preferences.
+    
+    Expects JSON payload with:
+        - userId (str): Unique identifier for the user
+        
+    Returns:
+        JSON containing:
+        - success (bool): True if successful
+        - backgroundInfo (str): Background information, if any
+        - agentPreferences (str): Agent preferences, if any
+        - gender (str): Preferred agent gender, if any
+        - error (str): Error message if any
+    """
+    user_id = request.json.get('userId')
+    return handle_get_prefs(user_id)
+    
+
+@api_blueprint.route('/api/set-prefs', methods=['POST'])
+def set_prefs():
+    """
+    Set user preferences.
+    
+    Expects JSON payload with:
+        - userId (str): Unique identifier for the user
+        - backgroundInfo (str): Background information
+        - agentPreferences (str): Agent preferences
+        - gender (str): Preferred agent gender
+        
+    Returns:
+        JSON containing:
+        - success (bool): True if successful
+        - error (str): Error message if any
+    """
+    data = request.json
+    return handle_set_prefs(data)
