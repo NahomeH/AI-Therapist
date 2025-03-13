@@ -12,6 +12,7 @@ CRISIS_MESSAGE = "It sounds like you're going through a really difficult time. A
 MIN_CONVO_LEN = 10
 LONG_CONTEXT_LEN = 20
 SHORT_CONTEXT_LEN = 3
+ANALYSIS_CONTEXT_LEN = 5
 
 def get_response(sys_prompt, messages):
     """
@@ -49,22 +50,32 @@ def handle_first_chat(data):
     user_id = data.get('userId')
     preferred_name = data.get('userName')
     is_voice_mode = data.get('isVoiceMode', False)
+
+    # Get user info from Supabase
     db_user_info = current_app.supabase_client.table('users').select('*').eq('user_id', user_id).execute()
     if not db_user_info:
         return jsonify({"success": False, "error": "User not found"})
     current_app.user_info = db_user_info.data[0]
     current_app.user_info['history_summary'] = ast.literal_eval(current_app.user_info['history_summary'])
     logger.info(f"User info: {current_app.user_info}")
+
+    # Configure custom system prompt
+    current_app.custom_sys_prompt = pl.systemprompt_v1()
     if current_app.user_info['history_summary']:
-        current_app.custom_sys_prompt = pl.systemprompt_v1() + pl.inject_history(preferred_name, current_app.user_info['history_summary'])
-    else:
-        current_app.custom_sys_prompt = pl.systemprompt_v1()
+        current_app.custom_sys_prompt = current_app.custom_sys_prompt+ pl.inject_history(preferred_name, current_app.user_info['history_summary'])
+    if current_app.user_info['custom_background']:
+        current_app.custom_sys_prompt = current_app.custom_sys_prompt+ pl.inject_background(current_app.user_info['custom_background'])
+    if current_app.user_info['custom_behavior']:
+        current_app.custom_sys_prompt = current_app.custom_sys_prompt+ pl.inject_behavior(current_app.user_info['custom_behavior'])
+
     logger.info(f"Custom system prompt: {current_app.custom_sys_prompt}")
 
     response_data = {
         "success": True,
         "sessionId": session_id
     }
+
+    # Retrieve first message and audio content, if applicable
     try:
         first_message = get_first_message(preferred_name, current_app.custom_sys_prompt, current_app.user_info['history_summary'])
         response_data["message"] = first_message
@@ -87,10 +98,14 @@ def handle_crisis_message(session_id, temp_db):
     if not temp_db[session_id]['crisis_status']:
         temp_db[session_id]['crisis_status'] = True
         return CRISIS_MESSAGE
-    return get_response(pl.handle_crisis_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])
+    return get_response(current_app.custom_sys_prompt + pl.handle_crisis_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])
 
 
-def generate_response(session_id, temp_db, sys_prompt):
+def convo_analysis(convo_str, user_info):
+    return ""
+
+
+def generate_response(session_id, temp_db, sys_prompt, user_info):
     """
     Generate a response to a conversation using OpenAI's API.
 
@@ -104,22 +119,26 @@ def generate_response(session_id, temp_db, sys_prompt):
         bool: True if the conversation should end, False otherwise.
     """
     session_history_str = str(temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:])
-    intent = get_response(pl.classify_intent_prompt_v0(), [{"role": "user", "content": session_history_str}])
-    logger.info(f"Detected intent: {intent}")
-    if "2" in intent: # Crisis
-        return handle_crisis_message(session_id, temp_db), False
-    elif "3" in intent: # Robust
-        return get_response(pl.systemprompt_v1_mini() + pl.robust_v0(), temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:]), False
 
+    # Classify intent
+    intent = get_response(pl.classify_intent_prompt_v1(), [{"role": "user", "content": session_history_str}])
+    logger.info(f"Detected intent: {intent}")
+    if "2" in intent: # Crisis response
+        return handle_crisis_message(session_id, temp_db), False
+    elif "3" in intent: # Robust response
+        return get_response(sys_prompt + pl.robust_v0(), temp_db[session_id]["history"][-SHORT_CONTEXT_LEN:]), False
+
+    # Generate typical response
     convo_len = len(temp_db[session_id]["history"])
     logger.info(f"Convo length: {convo_len}")
     if convo_len >= MIN_CONVO_LEN:
+        # Determine if the conversation should end or not
         should_end = get_response(pl.idenfity_end_prompt_v0() + session_history_str, [])
         logger.info(f"should_end: {should_end}")
         if "1" in should_end:
-            return get_response(pl.close_convo_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]), True
+            return get_response(pl.close_convo_prompt_v0() + pl.inject_behavior(current_app.user_info['custom_behavior']), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]), True
 
-    return get_response(sys_prompt, temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]), False
+    return get_response(sys_prompt + convo_analysis(str(temp_db[session_id]["history"][-ANALYSIS_CONTEXT_LEN:]), user_info), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]), False
 
 
 def handle_chat(data):
