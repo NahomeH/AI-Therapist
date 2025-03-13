@@ -37,8 +37,11 @@ def get_response(sys_prompt, messages):
     return response_content
 
 
-def get_first_message(user_name, sys_prompt, history):
-    first_message = f"Hi {user_name}! I'm Jennifer, your AI therapist. What would you like to talk about?"
+def get_first_message(user_name, sys_prompt, history, gender):
+    therapist_name = "Jennifer"
+    if gender == "MALE":
+        therapist_name = "William"
+    first_message = f"Hi {user_name}! I'm {therapist_name}, your AI therapist. What would you like to talk about?"
     if history:
         first_message = get_response(sys_prompt + pl.start_convo_prompt_v0(user_name, history), [])
     logger.info(f"First message: {first_message}")
@@ -52,6 +55,7 @@ def handle_first_chat(data):
     is_voice_mode = data.get('isVoiceMode', False)
 
     # Get user info from Supabase
+    logger.info(f"Getting prefs for user_id: {user_id}")
     db_user_info = current_app.supabase_client.table('users').select('*').eq('user_id', user_id).execute()
     if not db_user_info:
         return jsonify({"success": False, "error": "User not found"})
@@ -77,7 +81,7 @@ def handle_first_chat(data):
 
     # Retrieve first message and audio content, if applicable
     try:
-        first_message = get_first_message(preferred_name, current_app.custom_sys_prompt, current_app.user_info['history_summary'])
+        first_message = get_first_message(preferred_name, current_app.custom_sys_prompt, current_app.user_info['history_summary'], current_app.user_info['custom_gender'])
         response_data["message"] = first_message
         if is_voice_mode:
             audio_content = generate_audio(first_message)
@@ -151,7 +155,7 @@ def handle_chat(data):
         return jsonify({"success": False, "error": "Session not found"})
     current_app.temp_db[session_id]["history"].append({"role": "user", "content": user_message})
     try:
-        agent_response, end_flag = generate_response(session_id, current_app.temp_db, current_app.custom_sys_prompt)
+        agent_response, end_flag = generate_response(session_id, current_app.temp_db, current_app.custom_sys_prompt, current_app.user_info)
     except Exception as e:
         logger.error(f"Error generating response: {e}")
         return jsonify({"success": False, "error": str(e)})

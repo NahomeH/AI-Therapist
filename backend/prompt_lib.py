@@ -39,7 +39,7 @@ def summary_prompt_v0(convo):
 
     <Example>
     Conversation: {str(example_conversation)}
-    Output: "Alan's sleep has slightly improved, possibly due to extra daylight from daylight savings and turning off screens before bed. He feels his energy is inconsistent, often overwhelmed by work. Jennifer suggests taking breaks, reassessing workload, and prioritizing tasks to prevent burnout. Alan plans to incorporate breaks and better manage his responsibilities."
+    Output: Alan's sleep has slightly improved, possibly due to extra daylight from daylight savings and turning off screens before bed. He feels his energy is inconsistent, often overwhelmed by work. Jennifer suggests taking breaks, reassessing workload, and prioritizing tasks to prevent burnout. Alan plans to incorporate breaks and better manage his responsibilities.
     </Example>
 
     Conversation: {convo}
