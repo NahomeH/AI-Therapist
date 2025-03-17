@@ -2,7 +2,7 @@ Hi! 👋 We’re building Talk2Me, an affordable AI therapy solution which can s
 
 Info on general sprint progress and individual contributions are in the `progress` folder.
 
-[Link to Sprint 3 progress and contributions](https://github.com/winsonc7/CS224G/blob/main/progress/SPRINT_THREE.md)
+[Link to Sprint 4 progress and contributions](https://github.com/winsonc7/CS224G/blob/main/progress/SPRINT_FOUR.md)
 
 # Project Setup 🤖
 
