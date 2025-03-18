@@ -1,6 +1,3 @@
-def analyze_convo_prompt_v0(convo, background_info, pref_info, history):
-    pass
-
 example_conversation = [
     {"role": "assistant", "content": "Hello Alan, it's good to see you again. Last time, we discussed how you’ve been using lists to manage your workload but still feeling overwhelmed and exhausted. Have you noticed any changes with your task management or sleep patterns since then?"},
     {"role": "user", "content": "I guess my sleep has gotten a little better."},
