@@ -23,8 +23,11 @@
   - Not merged; see progress in `nahome-therapist-features` branch
 
 ### Amelia Kuang
-- Improved voice mode by allowing users to start/stop recording with the space bar
-- Created appointment scheduling feature: agent will suggest a future appointment date when conversation ends
+- Improved voice mode
+  - Allowing users to signal start/stop recording with the space bar, and play therapist's response after text displayed
+  - Misc: added banner for voice input instruction, cleanup and normalize transcribed text with punctuations
+- Created appointment scheduling feature: agent will suggest a future appointment date when conversation ends.
+  - If the appointment is confirmed, the user can download a calendar invite and add to their own calendar. Confirmed appointments also saved in backend databases and displayed in Appointments page.
 - Contributed to final presentation slides 
 
  ### Sneha Jayaganthan
