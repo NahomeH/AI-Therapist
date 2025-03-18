@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, request
 from .util.db_utils import handle_new_user, handle_save_session
 from .util.chat_utils import handle_first_chat, handle_chat, handle_add_punctuation
 from .util.appt_utils import handle_get_appointments, handle_generate_calendar, handle_save_appointment

@@ -31,6 +31,7 @@ def create_app(test_config=None):
     )
 
     # Initialize state objects
+    # TODO: Migrate to Redis database for scalability
     app.temp_db = {}
     app.user_info = {}
     app.custom_sys_prompt = None

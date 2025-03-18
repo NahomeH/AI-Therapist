@@ -26,6 +26,17 @@ def handle_new_user(data):
 
 
 def save_session(user_id, past_history, chat_history):
+    """
+    Save a session to the database.
+
+    Args:
+        user_id (str): The ID of the user.
+        past_history (list): The past history of the user.
+        chat_history (list): The current conversation history.
+
+    Returns:
+        None
+    """
     logger.info(f"Saving session for user_id: {user_id}, past_history: {past_history}, chat_history: {chat_history}")
     summary = get_response(pl.summary_prompt_v0(chat_history), [])
     logger.info(f"Summary: {summary}")

@@ -12,7 +12,6 @@ CRISIS_MESSAGE = "It sounds like you're going through a really difficult time. A
 MIN_CONVO_LEN = 10
 LONG_CONTEXT_LEN = 20
 SHORT_CONTEXT_LEN = 3
-ANALYSIS_CONTEXT_LEN = 5
 
 def get_response(sys_prompt, messages):
     """
@@ -38,6 +37,18 @@ def get_response(sys_prompt, messages):
 
 
 def get_first_message(user_name, sys_prompt, history, gender):
+    """
+    Get the first message to send to the user.
+
+    Args:
+        user_name (str): The name of the user.
+        sys_prompt (str): The system prompt to send to the API.
+        history (list): The conversation history.
+        gender (str): The gender of the therapist.
+
+    Returns:
+        str: The first message to send to the user.
+    """
     therapist_name = "Jennifer"
     if gender == "MALE":
         therapist_name = "William"
@@ -98,6 +109,16 @@ def handle_first_chat(data):
 
 
 def handle_crisis_message(session_id, temp_db):
+    """
+    Handle crisis message.
+
+    Args:
+        session_id (str): The ID of the conversation.
+        temp_db (dict): The temporary database.
+
+    Returns:
+        str: The generated response.
+    """
     logger.info(f"SENT_CRISIS original status: {temp_db[session_id]['crisis_status']}")
     if not temp_db[session_id]['crisis_status']:
         temp_db[session_id]['crisis_status'] = True
@@ -105,11 +126,7 @@ def handle_crisis_message(session_id, temp_db):
     return get_response(current_app.custom_sys_prompt + pl.handle_crisis_prompt_v0(), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:])
 
 
-def convo_analysis(convo_str, user_info):
-    return ""
-
-
-def generate_response(session_id, temp_db, sys_prompt, user_info):
+def generate_response(session_id, temp_db, sys_prompt):
     """
     Generate a response to a conversation using OpenAI's API.
 
@@ -142,7 +159,7 @@ def generate_response(session_id, temp_db, sys_prompt, user_info):
         if "1" in should_end:
             return get_response(pl.close_convo_prompt_v0() + pl.inject_behavior(current_app.user_info['custom_behavior']), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]), True
 
-    return get_response(sys_prompt + convo_analysis(str(temp_db[session_id]["history"][-ANALYSIS_CONTEXT_LEN:]), user_info), temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]), False
+    return get_response(sys_prompt, temp_db[session_id]["history"][-LONG_CONTEXT_LEN:]), False
 
 
 def handle_chat(data):
@@ -153,14 +170,14 @@ def handle_chat(data):
     
     if session_id not in current_app.temp_db:
         return jsonify({"success": False, "error": "Session not found"})
-    current_app.temp_db[session_id]["history"].append({"role": "user", "content": user_message})
+    current_app.temp_db[session_id]["history"].append({"role": "user", "content": user_message}) # Store the user's message in the temporary database
     try:
-        agent_response, end_flag = generate_response(session_id, current_app.temp_db, current_app.custom_sys_prompt, current_app.user_info)
+        agent_response, end_flag = generate_response(session_id, current_app.temp_db, current_app.custom_sys_prompt) # Generate a response to the user's message
     except Exception as e:
         logger.error(f"Error generating response: {e}")
         return jsonify({"success": False, "error": str(e)})
     logger.info(f"Response: {agent_response}")
-    current_app.temp_db[session_id]["history"].append({"role": "assistant", "content": agent_response})
+    current_app.temp_db[session_id]["history"].append({"role": "assistant", "content": agent_response}) # Store the agent's response in the temporary database
 
     response_data = {
         "success": True,
@@ -168,14 +185,14 @@ def handle_chat(data):
         "sessionId": session_id
     }
 
-    if end_flag: 
+    if end_flag: # Suggest an appointment if the conversation should end
         suggestedAppointment, suggestedTime = suggest_appointment(current_app.user_info['user_id'])
         if suggestedAppointment:
             response_data['suggestedAppointment'] = suggestedAppointment
             response_data['suggestedTime'] = suggestedTime
             logger.info(f"Scheduling appointment time: {response_data['suggestedTime']}")
 
-    if is_voice_mode:
+    if is_voice_mode: # Generate audio response if in voice mode
         audio_content = generate_audio(agent_response)
         if audio_content:
             response_data["audioData"] = base64.b64encode(audio_content).decode("utf-8")
