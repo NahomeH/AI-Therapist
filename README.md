@@ -1,9 +1,5 @@
 Hi! 👋 We’re building Talk2Me, an affordable AI therapy solution which can serve as an on-demand, low-cost resource for crisis support, emotional expression, and preliminary mental health insights. Continue reading to learn how to run our agent!
 
-Info on general sprint progress and individual contributions are in the `progress` folder.
-
-[Link to Sprint 4 progress and contributions](https://github.com/winsonc7/CS224G/blob/main/progress/SPRINT_FOUR.md)
-
 # Project Setup 🤖
 
 ## 1. Clone repo
